@@ -434,22 +434,6 @@ function getBookstoreExtraCategoryFilters(url = new URL(window.location.href)) {
     .filter(Boolean);
 }
 
-function normalizeLegacyBookstoreCategoryUrl() {
-  const current = new URL(window.location.href);
-  const selectedCategories = getBookstoreExtraCategoryFilters(current);
-
-  if (!selectedCategories.length || !current.pathname.startsWith('/collections/')) return;
-
-  const targetHandle = selectedCategories.find((handle) => handle && handle !== 'all') || 'all';
-  const next = new URL(current.href);
-  next.pathname = `/collections/${encodeURIComponent(targetHandle)}`;
-  next.searchParams.delete('bookstore_category');
-  next.searchParams.delete('page');
-  next.searchParams.delete('section_id');
-
-  window.location.replace(`${next.pathname}${next.search}${next.hash}`);
-}
-
 function productItemMatchesCollectionHandle(item, handle) {
   const normalizedHandle = normalizeCollectionSearchText(handle);
   if (!normalizedHandle) return true;
@@ -512,29 +496,8 @@ function setCollectionVisibleCount(count) {
   });
 }
 
-function toggleBookstoreProductGridSkeleton(isLoading) {
-  const grid = getCollectionSearchGrid();
-  if (!grid) return;
-
-  let skeleton = grid.parentElement?.querySelector('[data-bookstore-product-grid-skeleton]');
-
-  if (isLoading && !skeleton) {
-    skeleton = document.createElement('div');
-    skeleton.className = 'bookstore-product-grid-skeleton';
-    skeleton.setAttribute('data-bookstore-product-grid-skeleton', '');
-    skeleton.setAttribute('aria-hidden', 'true');
-    skeleton.innerHTML = Array.from({ length: 12 }, () => '<span class="bookstore-product-grid-skeleton__item"></span>').join('');
-    grid.insertAdjacentElement('beforebegin', skeleton);
-  }
-
-  if (skeleton) {
-    skeleton.hidden = !isLoading;
-  }
-}
-
 function setBookstoreFilterLoadingState(isLoading) {
   document.documentElement.classList.toggle('bookstore-filtering-pending', isLoading);
-  toggleBookstoreProductGridSkeleton(isLoading);
 
   document.querySelectorAll('main[data-template^="collection"] [data-bookstore-visible-count]').forEach((node) => {
     if (isLoading) {
@@ -546,62 +509,6 @@ function setBookstoreFilterLoadingState(isLoading) {
       delete node.dataset.bookstoreLoadingPreviousText;
     }
   });
-}
-
-function getBookstoreVendorGridCacheKey() {
-  const url = new URL(window.location.href);
-  const selectedVendors = getCollectionVendorFilters(url);
-  if (!selectedVendors.length) return '';
-
-  const keyParts = [
-    'bookstoreVendorGrid:v2',
-    url.pathname === '/collections/vendors' ? '/collections/all' : url.pathname,
-    selectedVendors.map((vendor) => normalizeCollectionSearchText(vendor)).sort().join('|'),
-    getBookstoreExtraCategoryFilters(url).map((handle) => normalizeCollectionSearchText(handle)).sort().join('|'),
-    url.searchParams.get('sort_by') || '',
-  ];
-
-  return keyParts.join('::');
-}
-
-function restoreBookstoreVendorGridCache(cacheKey) {
-  const grid = getCollectionSearchGrid();
-  if (!grid || !cacheKey) return null;
-
-  try {
-    const cached = JSON.parse(window.sessionStorage.getItem(cacheKey) || 'null');
-    if (!cached || Date.now() - Number(cached.savedAt || 0) > 30 * 60 * 1000 || !cached.html) return null;
-
-    grid.innerHTML = cached.html;
-    return Number(cached.count || 0);
-  } catch (error) {
-    return null;
-  }
-}
-
-function storeBookstoreVendorGridCache(cacheKey) {
-  const grid = getCollectionSearchGrid();
-  if (!grid || !cacheKey) return;
-
-  const visibleItems = getCollectionSearchItems().filter((item) => !item.hidden && item.style.display !== 'none');
-  if (!visibleItems.length) return;
-
-  try {
-    const html = visibleItems.map((item) => {
-      const clone = item.cloneNode(true);
-      clone.hidden = false;
-      clone.style.display = '';
-      return clone.outerHTML;
-    }).join('');
-
-    window.sessionStorage.setItem(cacheKey, JSON.stringify({
-      savedAt: Date.now(),
-      count: visibleItems.length,
-      html,
-    }));
-  } catch (error) {
-    // If storage is full/blocked, keep normal loading behavior.
-  }
 }
 
 function filterExistingCollectionItemsByVendor(vendor) {
@@ -643,8 +550,6 @@ async function loadAllCollectionPagesForVendorFilter() {
   if (!selectedVendors.length) return;
 
   const grid = getCollectionSearchGrid();
-  const resultsList = document.querySelector('main[data-template^="collection"] results-list[section-id]');
-  const sectionId = resultsList?.getAttribute('section-id') || '';
   const currentCategory = getBookstoreCollectionHandleFromPath(window.location.pathname);
   const categoryKey = getBookstoreExtraCategoryFilters().join('|');
   const loadedKey = `${selectedVendors.join('|')}:${currentCategory}:${categoryKey}`;
@@ -661,9 +566,6 @@ async function loadAllCollectionPagesForVendorFilter() {
     const url = new URL('/collections/vendors', window.location.origin);
     url.searchParams.set('q', vendorName);
     if (page > 1) url.searchParams.set('page', String(page));
-    if (sectionId) url.searchParams.set('section_id', sectionId);
-    url.searchParams.set('_fd', '0');
-    url.searchParams.set('pb', '0');
 
     try {
       const response = await fetch(url.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
@@ -694,7 +596,7 @@ async function loadAllCollectionPagesForVendorFilter() {
   });
 
   let nextPageIndex = 0;
-  const workerCount = Math.min(24, Math.max(1, remainingPages.length));
+  const workerCount = Math.min(6, Math.max(1, remainingPages.length));
   await Promise.all(
     Array.from({ length: workerCount }, async () => {
       while (nextPageIndex < remainingPages.length) {
@@ -725,18 +627,9 @@ async function loadAllCollectionPagesForVendorFilter() {
 async function applyCollectionVendorFilterFromURL(loadAllPages = false) {
   const vendor = getCollectionVendorFilter();
   const selectedVendors = getCollectionVendorFilters();
-  const vendorCacheKey = loadAllPages ? getBookstoreVendorGridCacheKey() : '';
 
   if (selectedVendors.length && loadAllPages) {
     setBookstoreFilterLoadingState(true);
-
-    const cachedCount = restoreBookstoreVendorGridCache(vendorCacheKey);
-    if (cachedCount !== null) {
-      const visibleCount = filterExistingCollectionItemsByVendor(vendor);
-      setCollectionVisibleCount(visibleCount || cachedCount);
-      setBookstoreFilterLoadingState(false);
-      return visibleCount || cachedCount;
-    }
   }
 
   document.querySelectorAll('.bookstore-category-publishers a[href*="filter.p.vendor"]').forEach((link) => {
@@ -753,7 +646,6 @@ async function applyCollectionVendorFilterFromURL(loadAllPages = false) {
   if (selectedVendors.length && loadAllPages) {
     await loadAllCollectionPagesForVendorFilter();
     visibleCount = filterExistingCollectionItemsByVendor(vendor);
-    storeBookstoreVendorGridCache(vendorCacheKey);
   }
 
   setBookstoreFilterLoadingState(false);
@@ -2040,25 +1932,11 @@ function rewriteBookstoreCategoryFilterLinks(root = document) {
       if (isSelectedExtraCategory) {
         removeSingleBookstoreSearchParam(next.searchParams, 'bookstore_category', targetHandle);
       } else {
-        appendUniqueBookstoreSearchParam(next.searchParams, 'bookstore_category', targetHandle);
+        next.searchParams.append('bookstore_category', targetHandle);
       }
 
       link.href = `${next.pathname}${next.search}${next.hash}`;
-    } else if (currentHandle === targetHandle) {
-      const next = new URL(current.href);
-      const remainingCategories = selectedCategories.filter((handle) => handle !== targetHandle);
-      const nextBaseHandle = remainingCategories.shift() || 'all';
-
-      next.pathname = `/collections/${encodeURIComponent(nextBaseHandle)}`;
-      next.searchParams.delete('bookstore_category');
-      remainingCategories.forEach((handle) => {
-        appendUniqueBookstoreSearchParam(next.searchParams, 'bookstore_category', handle);
-      });
-      next.searchParams.delete('page');
-      next.searchParams.delete('section_id');
-      link.href = `${next.pathname}${next.search}${next.hash}`;
     } else {
-      target.search = '';
       preserved.forEach((value, name) => {
         appendUniqueBookstoreSearchParam(target.searchParams, name, value);
       });
