@@ -169,6 +169,8 @@
         <a
           href="{{ routes.collections_url }}/all{{ query_suffix }}"
           class="bookstore-collection-facet__link{% if collection.handle == 'all' %} is-active{% endif %}"
+          data-bookstore-category-handle="all"
+          data-bookstore-category-title="All Books"
           {% if collection.handle == 'all' %}aria-current="page"{% endif %}
         >
           <span aria-hidden="true"></span>
@@ -195,6 +197,8 @@
             <a
               href="{{ category_collection.url }}{{ query_suffix }}"
               class="bookstore-collection-facet__link{% if collection.handle == category_handle %} is-active{% endif %}"
+              data-bookstore-category-handle="{{ category_handle | escape }}"
+              data-bookstore-category-title="{{ category_collection.title | escape }}"
               {% if collection.handle == category_handle %}aria-current="page"{% endif %}
             >
               <span aria-hidden="true"></span>

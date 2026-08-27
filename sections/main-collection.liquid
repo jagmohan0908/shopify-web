@@ -110,6 +110,12 @@
                   echo ' '
                 endfor
               endcapture
+              capture searchable_collection_handles
+                for product_collection in product.collections
+                  echo product_collection.handle
+                  echo '|'
+                endfor
+              endcapture
               capture collection_search_text
                 echo product.title
                 echo ' '
@@ -144,6 +150,7 @@
               data-bookstore-product-vendor="{{ product.vendor | escape }}"
               data-bookstore-product-author="{{ searchable_author | escape }}"
               data-bookstore-product-format="{{ searchable_format | escape }}"
+              data-bookstore-product-collections="{{ searchable_collection_handles | strip | escape }}"
               data-collection-search-text="{{ collection_search_text | strip | escape }}"
               ref="cards[]"
             >

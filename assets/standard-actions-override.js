@@ -224,6 +224,53 @@ function productItemMatchesSearch(item, query) {
   });
 }
 
+function getBookstoreCollectionHandleFromPath(pathname) {
+  const pathParts = String(pathname || '').split('/').filter(Boolean);
+  if (pathParts[0] !== 'collections') return '';
+
+  const handle = pathParts[1] || '';
+  if (!handle || handle === 'all' || handle === 'vendors' || handle === 'frontpage') return '';
+
+  try {
+    return decodeURIComponent(handle);
+  } catch (error) {
+    return handle;
+  }
+}
+
+function getBookstoreExtraCategoryFilters(url = new URL(window.location.href)) {
+  return url.searchParams
+    .getAll('bookstore_category')
+    .map((value) => String(value || '').trim())
+    .filter(Boolean);
+}
+
+function productItemMatchesCollectionHandle(item, handle) {
+  const normalizedHandle = normalizeCollectionSearchText(handle);
+  if (!normalizedHandle) return true;
+
+  const collectionHandles = String(item.getAttribute('data-bookstore-product-collections') || '')
+    .split('|')
+    .map((value) => normalizeCollectionSearchText(value))
+    .filter(Boolean);
+
+  if (collectionHandles.length) {
+    return collectionHandles.includes(normalizedHandle);
+  }
+
+  const rawText = item.getAttribute('data-collection-search-text') || item.textContent || '';
+  const searchableText = normalizeCollectionSearchText(rawText);
+
+  return searchableText.split(' ').filter(Boolean).includes(normalizedHandle);
+}
+
+function productItemMatchesExtraCategories(item, url = new URL(window.location.href)) {
+  const selectedCategories = getBookstoreExtraCategoryFilters(url);
+  if (!selectedCategories.length) return true;
+
+  return selectedCategories.every((handle) => productItemMatchesCollectionHandle(item, handle));
+}
+
 function getCollectionTotalCount() {
   const countNode = document.querySelector('main[data-template^="collection"] [data-bookstore-visible-count]');
   const rawCount = countNode?.getAttribute('data-bookstore-total-count') || countNode?.dataset.bookstoreOriginalCount || '';
@@ -253,10 +300,11 @@ function filterExistingCollectionItemsByVendor(vendor) {
   const items = getCollectionSearchItems();
   const grid = getCollectionSearchGrid();
   const wrapper = document.querySelector('main[data-template^="collection"] collection-component');
+  const selectedCategories = getBookstoreExtraCategoryFilters();
   let visibleCount = 0;
 
   items.forEach((item) => {
-    const isMatch = productItemMatchesVendor(item, vendor);
+    const isMatch = productItemMatchesVendor(item, vendor) && productItemMatchesExtraCategories(item);
 
     item.hidden = !isMatch;
     item.style.display = isMatch ? '' : 'none';
@@ -266,16 +314,17 @@ function filterExistingCollectionItemsByVendor(vendor) {
 
   if (wrapper) {
     wrapper.classList.toggle('bookstore-collection-vendor-filter-active', Boolean(vendor));
+    wrapper.classList.toggle('bookstore-collection-category-filter-active', selectedCategories.length > 0);
   }
 
   const message = ensureCollectionSearchMessage(grid);
 
   if (message) {
-    message.textContent = vendor ? `No books found for ${vendor} in this collection.` : 'No books found for this search in this collection.';
-    message.hidden = !vendor || visibleCount > 0;
+    message.textContent = vendor ? `No books found for ${vendor} in this collection.` : 'No books found for selected filters in this collection.';
+    message.hidden = (!vendor && selectedCategories.length === 0) || visibleCount > 0;
   }
 
-  setCollectionVisibleCount(vendor ? visibleCount : items.length);
+  setCollectionVisibleCount(vendor || selectedCategories.length ? visibleCount : items.length);
 
   return visibleCount;
 }
@@ -285,8 +334,10 @@ async function loadAllCollectionPagesForVendorFilter(vendor) {
 
   const resultsList = document.querySelector('main[data-template^="collection"] results-list[section-id]');
   const grid = getCollectionSearchGrid();
+  const categoryKey = getBookstoreExtraCategoryFilters().join('|');
+  const loadedKey = `${vendor}:${categoryKey}`;
 
-  if (!resultsList || !grid || grid.dataset.vendorFilterLoaded === vendor) return;
+  if (!resultsList || !grid || grid.dataset.vendorFilterLoaded === loadedKey) return;
 
   const sectionId = resultsList.getAttribute('section-id');
   const lastPage = Number(grid.dataset.lastPage || 1);
@@ -312,7 +363,7 @@ async function loadAllCollectionPagesForVendorFilter(vendor) {
       const html = await response.text();
       const doc = new DOMParser().parseFromString(html, 'text/html');
       const nextItems = Array.from(doc.querySelectorAll('.product-grid__item[data-product-id]'));
-      const matchingItems = nextItems.filter((item) => productItemMatchesVendor(item, vendor));
+      const matchingItems = nextItems.filter((item) => productItemMatchesVendor(item, vendor) && productItemMatchesExtraCategories(item));
 
       matchedPages.push({ page, items: matchingItems });
     } catch (error) {
@@ -345,7 +396,7 @@ async function loadAllCollectionPagesForVendorFilter(vendor) {
       });
     });
 
-  grid.dataset.vendorFilterLoaded = vendor;
+  grid.dataset.vendorFilterLoaded = loadedKey;
 }
 
 async function applyCollectionVendorFilterFromURL(loadAllPages = false) {
@@ -372,6 +423,94 @@ async function applyCollectionVendorFilterFromURL(loadAllPages = false) {
   return visibleCount;
 }
 
+async function loadAllCollectionPagesForExtraCategoryFilters() {
+  const selectedCategories = getBookstoreExtraCategoryFilters();
+  if (!selectedCategories.length) return;
+
+  const resultsList = document.querySelector('main[data-template^="collection"] results-list[section-id]');
+  const grid = getCollectionSearchGrid();
+  const vendor = getCollectionVendorFilter();
+  const loadedKey = `${selectedCategories.join('|')}:${vendor}`;
+
+  if (!resultsList || !grid || grid.dataset.categoryFilterLoaded === loadedKey) return;
+
+  const sectionId = resultsList.getAttribute('section-id');
+  const lastPage = Number(grid.dataset.lastPage || 1);
+
+  if (!sectionId || !lastPage || lastPage <= 1) {
+    grid.dataset.categoryFilterLoaded = loadedKey;
+    return;
+  }
+
+  const existingIds = new Set(
+    Array.from(grid.querySelectorAll('.product-grid__item[data-product-id]')).map((item) => item.getAttribute('data-product-id'))
+  );
+
+  const matchedPages = [];
+  let nextPage = 2;
+
+  async function loadCategoryPage(page) {
+    const url = buildBookstoreSectionPageUrl(page, sectionId);
+
+    try {
+      const response = await fetch(url.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      if (!response.ok) return;
+
+      const html = await response.text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const nextItems = Array.from(doc.querySelectorAll('.product-grid__item[data-product-id]'));
+      const matchingItems = nextItems.filter((item) => productItemMatchesVendor(item, vendor) && productItemMatchesExtraCategories(item));
+
+      matchedPages.push({ page, items: matchingItems });
+    } catch (error) {
+      // Keep current visible matches if one extra page request fails.
+    }
+  }
+
+  const workerCount = Math.min(6, Math.max(1, lastPage - 1));
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      while (nextPage <= lastPage) {
+        const page = nextPage;
+        nextPage += 1;
+        await loadCategoryPage(page);
+      }
+    })
+  );
+
+  matchedPages
+    .sort((a, b) => a.page - b.page)
+    .forEach(({ items: pageItems }) => {
+      pageItems.forEach((item) => {
+        const productId = item.getAttribute('data-product-id');
+        if (!productId || existingIds.has(productId)) return;
+        existingIds.add(productId);
+
+        item.hidden = false;
+        item.style.display = '';
+        grid.appendChild(item);
+      });
+    });
+
+  grid.dataset.categoryFilterLoaded = loadedKey;
+}
+
+async function applyCollectionExtraCategoryFiltersFromURL(loadAllPages = false) {
+  const selectedCategories = getBookstoreExtraCategoryFilters();
+  if (!selectedCategories.length) return 0;
+
+  let visibleCount = filterExistingCollectionItemsByVendor(getCollectionVendorFilter());
+
+  if (loadAllPages) {
+    await loadAllCollectionPagesForExtraCategoryFilters();
+    visibleCount = filterExistingCollectionItemsByVendor(getCollectionVendorFilter());
+  }
+
+  renderBookstoreActiveQueryPills();
+
+  return visibleCount;
+}
+
 function initBookstoreCollectionVendorFilter() {
   const selectedVendors = new URL(window.location.href).searchParams
     .getAll('filter.p.vendor')
@@ -392,9 +531,17 @@ function initBookstoreCollectionVendorFilter() {
   initBookstoreVendorFilterObserver();
 }
 
+function initBookstoreCollectionExtraCategoryFilter() {
+  if (!getBookstoreExtraCategoryFilters().length) return;
+
+  applyCollectionExtraCategoryFiltersFromURL(true);
+  initBookstoreVendorFilterObserver();
+}
+
 function initBookstoreVendorFilterObserver() {
   const vendor = getCollectionVendorFilter();
-  if (!vendor || window.__bookstoreVendorFilterObserverReady) return;
+  const selectedCategories = getBookstoreExtraCategoryFilters();
+  if ((!vendor && !selectedCategories.length) || window.__bookstoreVendorFilterObserverReady) return;
 
   const grid = getCollectionSearchGrid();
   if (!grid) return;
@@ -447,7 +594,7 @@ async function loadAllCollectionPagesForSearch(query) {
         if (!productId || existingIds.has(productId)) return;
         existingIds.add(productId);
 
-        if (productItemMatchesSearch(item, query)) {
+        if (productItemMatchesSearch(item, query) && productItemMatchesVendor(item, getCollectionVendorFilter()) && productItemMatchesExtraCategories(item)) {
           item.hidden = false;
           item.style.display = '';
           grid.appendChild(item);
@@ -476,6 +623,14 @@ if (document.readyState === 'loading') {
 }
 
 document.addEventListener('shopify:section:load', initBookstoreCollectionVendorFilter);
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initBookstoreCollectionExtraCategoryFilter, { once: true });
+} else {
+  initBookstoreCollectionExtraCategoryFilter();
+}
+
+document.addEventListener('shopify:section:load', initBookstoreCollectionExtraCategoryFilter);
 
 /**
  * Collection/vendor hero search should filter the products on the same page.
@@ -662,6 +817,23 @@ function getBookstoreCollectionPathFilter(url) {
   };
 }
 
+function getBookstoreCategoryFilterLabel(handle) {
+  const normalizedHandle = String(handle || '').trim();
+  if (!normalizedHandle) return '';
+
+  const link = Array.from(document.querySelectorAll('.bookstore-collection-facet__link[data-bookstore-category-handle]')).find((candidate) => {
+    return candidate.getAttribute('data-bookstore-category-handle') === normalizedHandle;
+  });
+
+  if (link) {
+    return link.getAttribute('data-bookstore-category-title') || link.textContent.trim();
+  }
+
+  return normalizedHandle
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 function removeSingleBookstoreSearchParam(params, name, value) {
   const values = params.getAll(name);
   let removed = false;
@@ -690,6 +862,15 @@ function renderBookstoreActiveQueryPills() {
   if (collectionPathFilter) {
     activeFilters.push(collectionPathFilter);
   }
+
+  getBookstoreExtraCategoryFilters(url).forEach((handle) => {
+    activeFilters.push({
+      param: 'bookstore_category',
+      label: 'Category',
+      value: handle,
+      displayValue: getBookstoreCategoryFilterLabel(handle),
+    });
+  });
 
   if (query && query !== '*') {
     activeFilters.push({
@@ -953,7 +1134,7 @@ async function loadGlobalCollectionSearch(query) {
     const html = await response.text();
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const searchItems = Array.from(doc.querySelectorAll('main[data-template^="search"] .product-grid__item[data-product-id], .product-grid__item[data-product-id]'))
-      .filter((item) => productItemMatchesSearch(item, query));
+      .filter((item) => productItemMatchesSearch(item, query) && productItemMatchesVendor(item, getCollectionVendorFilter()) && productItemMatchesExtraCategories(item));
     const resultCount = searchItems.length;
 
     grid.innerHTML = '';
@@ -1020,7 +1201,7 @@ async function applyCollectionPageSearch(query, updateUrl = true, loadAllPages =
   }
 
   items.forEach((item) => {
-    const isMatch = productItemMatchesSearch(item, query);
+    const isMatch = productItemMatchesSearch(item, query) && productItemMatchesVendor(item, getCollectionVendorFilter()) && productItemMatchesExtraCategories(item);
 
     item.hidden = !isMatch;
     item.style.display = isMatch ? '' : 'none';
@@ -1440,6 +1621,7 @@ function getBookstorePreservedCategoryParams() {
       name.startsWith('filter.') ||
       name === 'author' ||
       name === 'collection_search' ||
+      name === 'bookstore_category' ||
       name === 'sort_by'
     ) {
       params.append(name, value);
@@ -1458,9 +1640,10 @@ function getBookstorePreservedCategoryParams() {
 
 function rewriteBookstoreCategoryFilterLinks(root = document) {
   const scope = root instanceof Element ? root : document;
+  const current = new URL(window.location.href);
+  const currentHandle = getBookstoreCollectionHandleFromPath(current.pathname);
+  const selectedCategories = getBookstoreExtraCategoryFilters(current);
   const preserved = getBookstorePreservedCategoryParams();
-
-  if ([...preserved.keys()].length === 0) return;
 
   scope.querySelectorAll?.('.bookstore-collection-facet__link[href*="/collections/"]').forEach((link) => {
     if (!(link instanceof HTMLAnchorElement)) return;
@@ -1469,14 +1652,69 @@ function rewriteBookstoreCategoryFilterLinks(root = document) {
     if (!target.pathname.startsWith('/collections/')) return;
     if (target.pathname === '/collections/vendors') return;
 
-    preserved.forEach((value, name) => {
-      if (!target.searchParams.has(name)) {
-        target.searchParams.append(name, value);
-      }
-    });
+    const targetHandle = link.getAttribute('data-bookstore-category-handle') || getBookstoreCollectionHandleFromPath(target.pathname);
 
-    target.searchParams.delete('page');
-    link.href = `${target.pathname}${target.search}${target.hash}`;
+    if (!targetHandle) return;
+
+    if (targetHandle === 'all') {
+      target.search = '';
+
+      preserved.forEach((value, name) => {
+        if (name === 'bookstore_category') return;
+        if (!target.searchParams.has(name)) {
+          target.searchParams.append(name, value);
+        }
+      });
+
+      target.searchParams.delete('page');
+      target.searchParams.delete('section_id');
+      link.href = `${target.pathname}${target.search}${target.hash}`;
+
+      const isAllActive = !currentHandle && selectedCategories.length === 0;
+      link.classList.toggle('is-active', isAllActive);
+      if (isAllActive) {
+        link.setAttribute('aria-current', 'page');
+      } else {
+        link.removeAttribute('aria-current');
+      }
+
+      return;
+    }
+
+    const isSelectedExtraCategory = selectedCategories.includes(targetHandle);
+
+    if (currentHandle && currentHandle !== targetHandle) {
+      const next = new URL(current.href);
+
+      next.searchParams.delete('page');
+      next.searchParams.delete('section_id');
+
+      if (isSelectedExtraCategory) {
+        removeSingleBookstoreSearchParam(next.searchParams, 'bookstore_category', targetHandle);
+      } else {
+        next.searchParams.append('bookstore_category', targetHandle);
+      }
+
+      link.href = `${next.pathname}${next.search}${next.hash}`;
+    } else {
+      preserved.forEach((value, name) => {
+        if (!target.searchParams.has(name)) {
+          target.searchParams.append(name, value);
+        }
+      });
+
+      target.searchParams.delete('page');
+      target.searchParams.delete('section_id');
+      link.href = `${target.pathname}${target.search}${target.hash}`;
+    }
+
+    const isActive = currentHandle === targetHandle || isSelectedExtraCategory;
+    link.classList.toggle('is-active', isActive);
+    if (isActive) {
+      link.setAttribute('aria-current', 'page');
+    } else {
+      link.removeAttribute('aria-current');
+    }
   });
 }
 
