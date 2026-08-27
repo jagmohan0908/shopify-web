@@ -680,6 +680,18 @@ function renderBookstoreActiveQueryPills() {
     });
   }
 
+  if (url.pathname === '/collections/vendors' && !url.searchParams.has('filter.p.vendor')) {
+    const currentVendor = (url.searchParams.get('q') || '').trim();
+
+    if (currentVendor && currentVendor !== '*') {
+      activeFilters.push({
+        param: 'bookstore_vendor_page',
+        label: 'Publisher',
+        value: currentVendor,
+      });
+    }
+  }
+
   for (const [param, rawValue] of url.searchParams.entries()) {
     const value = (rawValue || '').trim();
     if (!param.startsWith('filter.') || handledParams.has(param) || !value || value === '*') continue;
@@ -738,6 +750,12 @@ function renderBookstoreActiveQueryPills() {
         if (filter.param === 'bookstore_price_range') {
           nextUrl.searchParams.delete('filter.v.price.gte');
           nextUrl.searchParams.delete('filter.v.price.lte');
+        } else if (filter.param === 'bookstore_vendor_page') {
+          nextUrl.pathname = '/collections/all';
+          nextUrl.searchParams.delete('q');
+          nextUrl.searchParams.delete('type');
+          nextUrl.searchParams.delete('view');
+          nextUrl.searchParams.delete('options[prefix]');
         } else {
           removeSingleBookstoreSearchParam(nextUrl.searchParams, filter.param, filter.value);
         }
