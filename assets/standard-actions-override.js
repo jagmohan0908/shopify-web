@@ -286,6 +286,7 @@ function cleanupBookstorePublisherFilterUrl() {
 function initBookstorePublisherFilterControls(root = document) {
   if (root === document) cleanupBookstorePublisherFilterUrl();
   syncBookstorePublisherFilterInputs(root);
+  renderBookstoreSelectedFilterSummary(root);
 }
 
 document.addEventListener(
@@ -368,6 +369,35 @@ function productItemMatchesSelectedVendors(item, url = new URL(window.location.h
   if (!vendors.length) return true;
 
   return vendors.some((vendor) => productItemMatchesVendor(item, vendor));
+}
+
+function getCollectionAuthorFilters(url = new URL(window.location.href)) {
+  const values = url.searchParams.getAll('filter.p.m.custom.author');
+
+  if (!values.length) {
+    values.push(url.searchParams.get('author') || '');
+  }
+
+  return uniqueBookstoreFilterValues(values).filter((value) => value !== '*');
+}
+
+function renderBookstoreSelectedFilterSummary(root = document) {
+  const scope = root instanceof Element ? root : document;
+  const containers = Array.from(scope.querySelectorAll?.('[data-bookstore-selected-filter-summary]') || []);
+  if (!containers.length) return;
+
+  const url = new URL(window.location.href);
+  const selectedFilters = [
+    ...getCollectionVendorFilters(url).map((value) => ({ label: 'Publisher', value })),
+    ...getCollectionAuthorFilters(url).map((value) => ({ label: 'Author', value })),
+  ];
+
+  containers.forEach((container) => {
+    container.hidden = selectedFilters.length === 0;
+    container.innerHTML = selectedFilters.map((filter) => {
+      return `<span class="bookstore-selected-filter-summary__pill"><span>${escapeCollectionSearchHtml(filter.label)}</span>${escapeCollectionSearchHtml(filter.value)}</span>`;
+    }).join('');
+  });
 }
 
 function productItemMatchesSearch(item, query) {
@@ -1102,6 +1132,7 @@ function renderBookstoreActiveQueryPills() {
   }
 
   document.querySelectorAll('[data-bookstore-query-pill]').forEach((pill) => pill.remove());
+  renderBookstoreSelectedFilterSummary();
 
   if (!activeFilters.length) return;
 

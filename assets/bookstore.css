@@ -1197,6 +1197,41 @@ main[data-template^="product"] .product-information .product-information__media 
   line-height: 1.65;
 }
 
+.bookstore-selected-filter-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 760px;
+  margin: 14px auto 0;
+}
+
+.bookstore-selected-filter-summary[hidden] {
+  display: none;
+}
+
+.bookstore-selected-filter-summary__pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 6px 12px;
+  border: 1px solid rgba(182, 25, 26, 0.24);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.76);
+  color: var(--bs-cat-ink, #0d1c2f);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.bookstore-selected-filter-summary__pill span:first-child {
+  margin-right: 6px;
+  color: var(--bs-cat-accent, #b6191a);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 :is(main[data-template^="collection"], main[data-template^="search"]) .bookstore-category-meta {
   display: flex;
   flex-wrap: wrap;
