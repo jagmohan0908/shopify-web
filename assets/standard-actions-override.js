@@ -212,7 +212,6 @@ function buildCleanBookstorePublisherFilterUrl(selectedVendors, sourceUrl = new 
       name === 'sort_by' ||
       name === 'collection_search' ||
       name === 'author' ||
-      name === 'bookstore_category' ||
       name.startsWith('filter.')
     ) {
       next.searchParams.append(name, cleanValue);
@@ -433,6 +432,24 @@ function getBookstoreExtraCategoryFilters(url = new URL(window.location.href)) {
     .map((value) => String(value || '').trim())
     .filter(Boolean);
 }
+
+function normalizeLegacyBookstoreCategoryUrl() {
+  const current = new URL(window.location.href);
+  const selectedCategories = getBookstoreExtraCategoryFilters(current);
+
+  if (!selectedCategories.length || !current.pathname.startsWith('/collections/')) return;
+
+  const targetHandle = selectedCategories.find((handle) => handle && handle !== 'all') || 'all';
+  const next = new URL(current.href);
+  next.pathname = `/collections/${encodeURIComponent(targetHandle)}`;
+  next.searchParams.delete('bookstore_category');
+  next.searchParams.delete('page');
+  next.searchParams.delete('section_id');
+
+  window.location.replace(`${next.pathname}${next.search}${next.hash}`);
+}
+
+normalizeLegacyBookstoreCategoryUrl();
 
 function productItemMatchesCollectionHandle(item, handle) {
   const normalizedHandle = normalizeCollectionSearchText(handle);
@@ -1942,7 +1959,6 @@ function getBookstorePreservedCategoryParams() {
       name.startsWith('filter.') ||
       name === 'author' ||
       name === 'collection_search' ||
-      name === 'bookstore_category' ||
       name === 'sort_by'
     ) {
       params.append(name, value);
@@ -2013,32 +2029,16 @@ function rewriteBookstoreCategoryFilterLinks(root = document) {
       return;
     }
 
-    const isSelectedExtraCategory = selectedCategories.includes(targetHandle);
+    target.search = '';
+    preserved.forEach((value, name) => {
+      appendUniqueBookstoreSearchParam(target.searchParams, name, value);
+    });
 
-    if (currentHandle && currentHandle !== targetHandle) {
-      const next = new URL(current.href);
+    target.searchParams.delete('page');
+    target.searchParams.delete('section_id');
+    link.href = `${target.pathname}${target.search}${target.hash}`;
 
-      next.searchParams.delete('page');
-      next.searchParams.delete('section_id');
-
-      if (isSelectedExtraCategory) {
-        removeSingleBookstoreSearchParam(next.searchParams, 'bookstore_category', targetHandle);
-      } else {
-        next.searchParams.append('bookstore_category', targetHandle);
-      }
-
-      link.href = `${next.pathname}${next.search}${next.hash}`;
-    } else {
-      preserved.forEach((value, name) => {
-        appendUniqueBookstoreSearchParam(target.searchParams, name, value);
-      });
-
-      target.searchParams.delete('page');
-      target.searchParams.delete('section_id');
-      link.href = `${target.pathname}${target.search}${target.hash}`;
-    }
-
-    const isActive = currentHandle === targetHandle || isSelectedExtraCategory;
+    const isActive = currentHandle === targetHandle;
     link.classList.toggle('is-active', isActive);
     if (isActive) {
       link.setAttribute('aria-current', 'page');
