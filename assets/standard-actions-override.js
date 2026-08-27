@@ -640,6 +640,28 @@ function getBookstoreFilterValueLabel(param, value) {
   return value;
 }
 
+function getBookstoreCollectionPathFilter(url) {
+  const pathParts = url.pathname.split('/').filter(Boolean);
+  if (pathParts[0] !== 'collections') return null;
+
+  const handle = pathParts[1] || '';
+  if (!handle || handle === 'all' || handle === 'vendors' || handle === 'frontpage') return null;
+
+  const decodedHandle = decodeURIComponent(handle.replace(/\+/g, ' '));
+  const heading = document.querySelector('main h1');
+  const headingText = (heading?.textContent || '').trim();
+  const fallbackLabel = decodedHandle
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+
+  return {
+    param: 'bookstore_collection_page',
+    label: 'Category',
+    value: handle,
+    displayValue: headingText || fallbackLabel,
+  };
+}
+
 function removeSingleBookstoreSearchParam(params, name, value) {
   const values = params.getAll(name);
   let removed = false;
@@ -663,6 +685,11 @@ function renderBookstoreActiveQueryPills() {
   const query = (url.searchParams.get('collection_search') || '').trim();
   const minPrice = (url.searchParams.get('filter.v.price.gte') || '').trim();
   const maxPrice = (url.searchParams.get('filter.v.price.lte') || '').trim();
+  const collectionPathFilter = getBookstoreCollectionPathFilter(url);
+
+  if (collectionPathFilter) {
+    activeFilters.push(collectionPathFilter);
+  }
 
   if (query && query !== '*') {
     activeFilters.push({
@@ -756,6 +783,8 @@ function renderBookstoreActiveQueryPills() {
           nextUrl.searchParams.delete('type');
           nextUrl.searchParams.delete('view');
           nextUrl.searchParams.delete('options[prefix]');
+        } else if (filter.param === 'bookstore_collection_page') {
+          nextUrl.pathname = '/collections/all';
         } else {
           removeSingleBookstoreSearchParam(nextUrl.searchParams, filter.param, filter.value);
         }
