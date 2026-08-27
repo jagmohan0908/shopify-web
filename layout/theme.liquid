@@ -40,7 +40,11 @@
           }
         }
 
-        if (rawParams.has('bookstore_category') || rawParams.has('collection_search')) {
+        if (
+          rawParams.has('filter.p.vendor') ||
+          rawParams.has('bookstore_category') ||
+          rawParams.has('collection_search')
+        ) {
           document.documentElement.classList.add('bookstore-filtering-pending');
         }
 
