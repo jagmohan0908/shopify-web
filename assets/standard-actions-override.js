@@ -496,6 +496,21 @@ function setCollectionVisibleCount(count) {
   });
 }
 
+function setBookstoreFilterLoadingState(isLoading) {
+  document.documentElement.classList.toggle('bookstore-filtering-pending', isLoading);
+
+  document.querySelectorAll('main[data-template^="collection"] [data-bookstore-visible-count]').forEach((node) => {
+    if (isLoading) {
+      if (!node.dataset.bookstoreLoadingPreviousText) {
+        node.dataset.bookstoreLoadingPreviousText = node.textContent.trim();
+      }
+      node.textContent = '...';
+    } else if (node.dataset.bookstoreLoadingPreviousText) {
+      delete node.dataset.bookstoreLoadingPreviousText;
+    }
+  });
+}
+
 function filterExistingCollectionItemsByVendor(vendor) {
   const items = getCollectionSearchItems();
   const grid = getCollectionSearchGrid();
@@ -611,6 +626,11 @@ async function loadAllCollectionPagesForVendorFilter() {
 
 async function applyCollectionVendorFilterFromURL(loadAllPages = false) {
   const vendor = getCollectionVendorFilter();
+  const selectedVendors = getCollectionVendorFilters();
+
+  if (selectedVendors.length && loadAllPages) {
+    setBookstoreFilterLoadingState(true);
+  }
 
   document.querySelectorAll('.bookstore-category-publishers a[href*="filter.p.vendor"]').forEach((link) => {
     const linkVendor = new URL(link.href, window.location.origin).searchParams.get('filter.p.vendor') || '';
@@ -623,12 +643,12 @@ async function applyCollectionVendorFilterFromURL(loadAllPages = false) {
 
   let visibleCount = filterExistingCollectionItemsByVendor(vendor);
 
-  if (vendor && loadAllPages) {
-    await loadAllCollectionPagesForVendorFilter(vendor);
+  if (selectedVendors.length && loadAllPages) {
+    await loadAllCollectionPagesForVendorFilter();
     visibleCount = filterExistingCollectionItemsByVendor(vendor);
   }
 
-  document.documentElement.classList.remove('bookstore-filtering-pending');
+  setBookstoreFilterLoadingState(false);
 
   return visibleCount;
 }
