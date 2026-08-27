@@ -4,22 +4,13 @@
   assign current_language = request.params['filter.p.m.custom.language']
   assign current_format = request.params['filter.p.m.custom.format']
   assign current_availability = request.params['filter.v.availability']
-
-  assign author_filter = blank
-  if filters != blank
-    for filter in filters
-      assign filter_label = filter.label | downcase
-      if filter.param_name contains 'author' or filter_label contains 'author'
-        assign author_filter = filter
-        break
-      endif
-    endfor
-  endif
+  assign current_min_price = request.params['filter.v.price.gte']
+  assign current_max_price = request.params['filter.v.price.lte']
 
   assign author_values = ''
   assign language_values = ''
   assign format_values = ''
-  for item in collections.all.products limit: 80
+  for item in collections.all.products limit: 250
     assign item_author = item.metafields.custom.author.value | default: item.metafields.custom.author
     assign item_language = item.metafields.custom.language.value | default: item.metafields.custom.language
     assign item_format = item.metafields.custom.format.value | default: item.metafields.custom.cover_type.value | default: item.metafields.custom.cover_type
@@ -51,94 +42,143 @@
   assign format_list = format_values | split: '|'
 %}
 
-<form class="bookstore-fallback-filters" action="{{ routes.search_url }}" method="get">
-  <input type="hidden" name="type" value="product">
-  <input type="hidden" name="q" value="*">
+<div class="bookstore-fallback-filters">
   {% if current_author != blank %}
     <input type="hidden" name="filter.p.m.custom.author" value="{{ current_author | escape }}">
   {% endif %}
 
-  <h4>Filters</h4>
-
-  <details open>
-    <summary>Availability</summary>
-    <label>
-      <input type="checkbox" name="filter.v.availability" value="1" {% if current_availability == '1' %}checked{% endif %} onchange="this.form.submit()">
-      In stock
-    </label>
+  <details class="facets__panel bookstore-collection-facet bookstore-entity-facet bookstore-entity-facet--publisher-search" open>
+    <summary class="facets__summary"><span class="facets__label">Publisher</span></summary>
+    <div class="facets__inputs-wrapper bookstore-collection-facet__inputs">
+      <div class="bookstore-entity-author-search bookstore-entity-publisher-search" role="search" data-entity-filter-search>
+        <label class="visually-hidden" for="BookstoreFallbackPublisherSearch">Search publisher</label>
+        <input id="BookstoreFallbackPublisherSearch" type="search" data-entity-filter-search-input placeholder="Search publisher" value="{{ current_vendor | escape }}" autocomplete="off">
+        <button type="button" data-entity-filter-search-button aria-label="Search publisher">Search</button>
+      </div>
+      <ul class="facets__inputs-list bookstore-collection-facet__list list-unstyled" role="list" data-entity-filter-list>
+        {% assign rendered_publisher_count = 0 %}
+        {% for vendor in collections.all.all_vendors limit: 80 %}
+          {% assign rendered_publisher_count = rendered_publisher_count | plus: 1 %}
+          <li class="facets__inputs-list-item">
+            <label class="bookstore-collection-facet__link{% if current_vendor == vendor %} is-active{% endif %}">
+              <input type="checkbox" name="filter.p.vendor" value="{{ vendor | escape }}" {% if current_vendor == vendor %}checked{% endif %} onchange="this.form.submit()">
+              <span aria-hidden="true"></span>
+              <span>{{ vendor }}</span>
+            </label>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
   </details>
 
-  <details open>
-    <summary>Publisher</summary>
-    {% for vendor in collections.all.all_vendors limit: 36 %}
-      <label>
-        <input type="checkbox" name="filter.p.vendor" value="{{ vendor | escape }}" {% if current_vendor == vendor %}checked{% endif %} onchange="this.form.submit()">
-        {{ vendor }}
-      </label>
-    {% endfor %}
-  </details>
-
-  {% if author_filter != blank and author_filter.values.size > 0 %}
-    <details open>
-      <summary>Author</summary>
-      {% for author_value in author_filter.values limit: 80 %}
-        {% assign author_name = author_value.label | default: author_value.value | strip %}
-        {% assign author_value_raw = author_value.value | default: author_name %}
-        {% if author_name != blank and author_value.count > 0 %}
-          <label>
-            <input type="checkbox" name="{{ author_filter.param_name }}" value="{{ author_value_raw | escape }}" {% if current_author == author_value_raw or current_author == author_name %}checked{% endif %} onchange="this.form.submit()">
-            {{ author_name }}
-          </label>
+  {% if author_values != blank %}
+    <details class="facets__panel bookstore-entity-facet bookstore-entity-facet--author-search" open>
+      <summary class="facets__summary"><span class="facets__label">Author</span></summary>
+      <div class="facets__inputs-wrapper bookstore-entity-facet__inputs">
+        <div class="bookstore-entity-author-search" role="search" data-entity-filter-search>
+          <label class="visually-hidden" for="BookstoreFallbackAuthorSearch">Search author</label>
+          <input id="BookstoreFallbackAuthorSearch" type="search" data-entity-filter-search-input placeholder="Search author" value="{{ current_author | escape }}" autocomplete="off">
+          <button type="button" data-entity-filter-search-button aria-label="Search author">Search</button>
+        </div>
+        <ul class="facets__inputs-list bookstore-entity-facet__list list-unstyled" role="list" data-entity-filter-list>
+          {% assign rendered_author_count = 0 %}
+          {% for value in author_list %}
+            {% assign clean_value = value | strip %}
+            {% if clean_value != blank %}
+              {% assign rendered_author_count = rendered_author_count | plus: 1 %}
+              <li class="facets__inputs-list-item" {% if rendered_author_count > 12 %}hidden data-entity-extra-item{% endif %}>
+                <label class="bookstore-author-filter-row">
+                  <input type="checkbox" name="filter.p.m.custom.author" value="{{ clean_value | escape }}" {% if current_author == clean_value %}checked{% endif %} onchange="this.form.submit()">
+                  <span class="bookstore-author-filter-row__box" aria-hidden="true"></span>
+                  <span class="bookstore-author-filter-row__label">{{ clean_value }}</span>
+                </label>
+              </li>
+            {% endif %}
+          {% endfor %}
+        </ul>
+        {% if rendered_author_count > 12 %}
+          <button type="button" class="bookstore-entity-show-more" data-entity-show-more>+ Show more</button>
         {% endif %}
-      {% endfor %}
-    </details>
-  {% elsif author_values != blank %}
-    <details open>
-      <summary>Author</summary>
-      {% for value in author_list limit: 80 %}
-        {% assign clean_value = value | strip %}
-        {% if clean_value != blank %}
-          <label>
-            <input type="checkbox" name="filter.p.m.custom.author" value="{{ clean_value | escape }}" {% if current_author == clean_value %}checked{% endif %} onchange="this.form.submit()">
-            {{ clean_value }}
-          </label>
-        {% endif %}
-      {% endfor %}
+      </div>
     </details>
   {% endif %}
 
-  {% if language_values != blank %}
-    <details open>
-      <summary>Language</summary>
-      {% for value in language_list %}
-        {% assign clean_value = value | strip %}
-        {% if clean_value != blank %}
-          <label>
-            <input type="checkbox" name="filter.p.m.custom.language" value="{{ clean_value | escape }}" {% if current_language == clean_value %}checked{% endif %} onchange="this.form.submit()">
-            {{ clean_value }}
+  <details class="facets__panel" open>
+    <summary class="facets__summary"><span class="facets__label">Availability</span></summary>
+    <div class="facets__inputs-wrapper">
+      <ul class="facets__inputs-list list-unstyled" role="list">
+        <li class="facets__inputs-list-item">
+          <label class="bookstore-collection-facet__link{% if current_availability == '1' %} is-active{% endif %}">
+            <input type="checkbox" name="filter.v.availability" value="1" {% if current_availability == '1' %}checked{% endif %} onchange="this.form.submit()">
+            <span aria-hidden="true"></span>
+            <span>In stock</span>
           </label>
-        {% endif %}
-      {% endfor %}
+        </li>
+      </ul>
+    </div>
+  </details>
+
+  {% if language_values != blank %}
+    <details class="facets__panel bookstore-collection-facet" open>
+      <summary class="facets__summary"><span class="facets__label">Language</span></summary>
+      <div class="facets__inputs-wrapper bookstore-collection-facet__inputs">
+        <ul class="facets__inputs-list bookstore-collection-facet__list list-unstyled" role="list">
+          {% for value in language_list %}
+            {% assign clean_value = value | strip %}
+            {% if clean_value != blank %}
+              <li class="facets__inputs-list-item">
+                <label class="bookstore-collection-facet__link{% if current_language == clean_value %} is-active{% endif %}">
+                  <input type="checkbox" name="filter.p.m.custom.language" value="{{ clean_value | escape }}" {% if current_language == clean_value %}checked{% endif %} onchange="this.form.submit()">
+                  <span aria-hidden="true"></span>
+                  <span>{{ clean_value }}</span>
+                </label>
+              </li>
+            {% endif %}
+          {% endfor %}
+        </ul>
+      </div>
     </details>
   {% endif %}
 
   {% if format_values != blank %}
-    <details open>
-      <summary>Format</summary>
-      {% for value in format_list %}
-        {% assign clean_value = value | strip %}
-        {% if clean_value != blank %}
-          <label>
-            <input type="checkbox" name="filter.p.m.custom.format" value="{{ clean_value | escape }}" {% if current_format == clean_value %}checked{% endif %} onchange="this.form.submit()">
-            {{ clean_value }}
-          </label>
-        {% endif %}
-      {% endfor %}
+    <details class="facets__panel bookstore-collection-facet" open>
+      <summary class="facets__summary"><span class="facets__label">Format</span></summary>
+      <div class="facets__inputs-wrapper bookstore-collection-facet__inputs">
+        <ul class="facets__inputs-list bookstore-collection-facet__list list-unstyled" role="list">
+          {% for value in format_list %}
+            {% assign clean_value = value | strip %}
+            {% if clean_value != blank %}
+              <li class="facets__inputs-list-item">
+                <label class="bookstore-collection-facet__link{% if current_format == clean_value %} is-active{% endif %}">
+                  <input type="checkbox" name="filter.p.m.custom.format" value="{{ clean_value | escape }}" {% if current_format == clean_value %}checked{% endif %} onchange="this.form.submit()">
+                  <span aria-hidden="true"></span>
+                  <span>{{ clean_value }}</span>
+                </label>
+              </li>
+            {% endif %}
+          {% endfor %}
+        </ul>
+      </div>
     </details>
   {% endif %}
 
-  <div class="bookstore-fallback-filters__actions">
-    <button type="submit">Apply filters</button>
-    <a href="{{ routes.search_url }}?type=product&amp;q=*">Clear all</a>
-  </div>
-</form>
+  <details class="facets__panel bookstore-fallback-filters__price-panel" open>
+    <summary class="facets__summary"><span class="facets__label">Price</span></summary>
+    <div class="facets__inputs-wrapper">
+      <div class="bookstore-fallback-filters__price">
+        <label>
+          <span>Min</span>
+          <input type="number" name="filter.v.price.gte" value="{{ current_min_price | escape }}" placeholder="0" min="0">
+        </label>
+        <label>
+          <span>Max</span>
+          <input type="number" name="filter.v.price.lte" value="{{ current_max_price | escape }}" placeholder="Max" min="0">
+        </label>
+      </div>
+      <div class="bookstore-fallback-filters__actions bookstore-fallback-filters__actions--price">
+        <button type="submit">Apply filters</button>
+        <a href="{{ routes.collections_url }}/all">Clear all</a>
+      </div>
+    </div>
+  </details>
+</div>

@@ -18,6 +18,31 @@
         };
 
         const rawPath = window.location.pathname || '';
+        const rawParams = new URLSearchParams(window.location.search);
+
+        if (rawPath === '/collections/vendors' && rawParams.get('q') === '*' && rawParams.has('filter.p.vendor')) {
+          const firstVendor = rawParams.getAll('filter.p.vendor').find((vendor) => vendor && vendor.trim());
+
+          if (firstVendor) {
+            rawParams.delete('q');
+            rawParams.delete('type');
+            rawParams.delete('view');
+            rawParams.delete('options[prefix]');
+            rawParams.delete('page');
+            rawParams.delete('section_id');
+
+            for (const [name, value] of Array.from(rawParams.entries())) {
+              if (!value) rawParams.delete(name);
+            }
+
+            window.location.replace(`/collections/all?${rawParams.toString()}${window.location.hash || ''}`);
+            return;
+          }
+        }
+
+        if (rawParams.has('filter.p.vendor') || rawParams.has('filter.p.m.custom.author')) {
+          document.documentElement.classList.add('bookstore-filtering-pending');
+        }
 
         if (rawPath === '/collections/frontpage') {
           window.location.replace(`/${window.location.search || ''}${window.location.hash || ''}`);
@@ -33,7 +58,8 @@
 
         if (rawPath === '/collections/all') {
           const params = new URLSearchParams(window.location.search);
-          if (params.has('filter.p.vendor')) {
+          const selectedVendors = params.getAll('filter.p.vendor').filter((vendor) => vendor && vendor.trim());
+          if (selectedVendors.length === 1) {
             const vendor = params.get('filter.p.vendor');
             window.location.replace(`/collections/vendors?q=${encodeURIComponent(vendor)}${window.location.hash || ''}`);
           }

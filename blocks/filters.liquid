@@ -90,6 +90,24 @@
     assign page_type = 'collection'
   endif
   assign page_type_attribute = 'data-page-type="' | append: page_type | append: '"'
+  assign is_author_results_page = false
+  if template.name == 'search' and template.suffix == 'author'
+    assign is_author_results_page = true
+  endif
+
+  assign is_publisher_results_page = false
+  if template.name == 'collection'
+    assign collection_url_check = collection.url | default: ''
+    if collection.handle == 'vendors' or collection_url_check contains '/collections/vendors'
+      assign is_publisher_results_page = true
+    endif
+  endif
+
+  assign current_publisher_filter_value = ''
+  if is_publisher_results_page
+    assign current_publisher_filter_value = collection.current_vendor | default: request.params.q | default: collection.title | strip
+    assign results_url = routes.collections_url | append: '/all'
+  endif
 
   assign collection_handle_attribute = 'data-collection-handle="' | append: collection.handle | append: '"'
 
@@ -195,6 +213,9 @@
           ref="facetsForm"
         >
           {% render 'bookstore-author-filter-lock', filters: filters %}
+          {% if is_publisher_results_page and current_publisher_filter_value != blank and current_publisher_filter_value != '*' %}
+            <input type="hidden" name="filter.p.vendor" value="{{ current_publisher_filter_value | escape }}">
+          {% endif %}
           {% if should_show_pane %}
             {% render 'filter-remove-buttons',
               filters: filters,
@@ -210,7 +231,13 @@
                 {%- for filter in filters -%}
                   {% assign filter_label_downcase = filter.label | downcase %}
                   {% if filter_label_downcase contains 'author'
-                    or filter_label_downcase == 'category'
+                    or filter_label_downcase contains 'publisher'
+                    or filter.param_name contains 'author'
+                    or filter.param_name contains 'vendor'
+                  %}
+                    {% continue %}
+                  {% endif %}
+                  {% if filter_label_downcase == 'category'
                     or filter.param_name contains 'product_type'
                     or filter.param_name contains 'custom.categories'
                     or filter.param_name contains 'tag'
@@ -254,18 +281,41 @@
               {% assign rendered_filters_stripped = rendered_filters | strip %}
 
               <div class="facets__filters-wrapper">
-                {% if page_type == 'collection' %}
-                  {% render 'bookstore-collection-filter', filter_style: block_settings.filter_style, collection: collection %}
-                {% endif %}
-                {% render 'bookstore-entity-sidebar-filter',
-                  filters: filters,
-                  collection: collection,
-                  filter_style: block_settings.filter_style,
-                  section_id: section.id
-                %}
                 {% if rendered_filters_stripped == blank and page_type == 'collection' and collection.handle == 'all' %}
-                  {% render 'bookstore-all-collection-fallback-filters', filters: filters %}
-                {% elsif block_settings.filter_style == 'horizontal' %}
+                  {% render 'bookstore-collection-filter',
+                    filter_style: block_settings.filter_style,
+                    collection: collection,
+                    filters: filters
+                  %}
+                  {% render 'bookstore-all-collection-fallback-filters' %}
+                {% elsif is_author_results_page or is_publisher_results_page %}
+                  {% render 'bookstore-entity-sidebar-filter',
+                    filters: filters,
+                    collection: collection,
+                    filter_style: block_settings.filter_style,
+                    section_id: section.id
+                  %}
+                  {% render 'bookstore-collection-filter',
+                    filter_style: block_settings.filter_style,
+                    collection: collection,
+                    filters: filters
+                  %}
+                {% else %}
+                  {% if page_type == 'collection' %}
+                    {% render 'bookstore-collection-filter',
+                      filter_style: block_settings.filter_style,
+                      collection: collection,
+                      filters: filters
+                    %}
+                  {% endif %}
+                  {% render 'bookstore-entity-sidebar-filter',
+                    filters: filters,
+                    collection: collection,
+                    filter_style: block_settings.filter_style,
+                    section_id: section.id
+                  %}
+                {% endif %}
+                {% if rendered_filters_stripped != blank and block_settings.filter_style == 'horizontal' %}
                   {% liquid
                     assign more_attributes = 'on:click="#filters-drawer/toggle"'
                     if block_settings.text_label_case == 'uppercase'
@@ -280,7 +330,7 @@
                     minimum-items: 2,
                     data-testid: 'horizontal-filters-overflow-list'
                   %}
-                {% else %}
+                {% elsif rendered_filters_stripped != blank %}
                   {{ rendered_filters }}
                 {% endif %}
               </div>
@@ -415,6 +465,9 @@
             ref="facetsForm"
           >
             {% render 'bookstore-author-filter-lock', filters: filters %}
+            {% if is_publisher_results_page and current_publisher_filter_value != blank and current_publisher_filter_value != '*' %}
+              <input type="hidden" name="filter.p.vendor" value="{{ current_publisher_filter_value | escape }}">
+            {% endif %}
             {% render 'sorting',
               results: results,
               sort_by: sort_by,
@@ -466,6 +519,9 @@
           ref="facetsForm"
         >
           {% render 'bookstore-author-filter-lock', filters: filters %}
+          {% if is_publisher_results_page and current_publisher_filter_value != blank and current_publisher_filter_value != '*' %}
+            <input type="hidden" name="filter.p.vendor" value="{{ current_publisher_filter_value | escape }}">
+          {% endif %}
           {% capture filter_bubble_html %}
             <span
               class="theme-drawer__badge"
@@ -508,7 +564,13 @@
                 {%- for filter in filters -%}
                   {% assign filter_label_downcase = filter.label | downcase %}
                   {% if filter_label_downcase contains 'author'
-                    or filter_label_downcase == 'category'
+                    or filter_label_downcase contains 'publisher'
+                    or filter.param_name contains 'author'
+                    or filter.param_name contains 'vendor'
+                  %}
+                    {% continue %}
+                  {% endif %}
+                  {% if filter_label_downcase == 'category'
                     or filter.param_name contains 'product_type'
                     or filter.param_name contains 'custom.categories'
                     or filter.param_name contains 'tag'
@@ -539,19 +601,46 @@
                 {%- endfor -%}
                 {% endcapture %}
                 {% assign rendered_drawer_filters_stripped = rendered_drawer_filters | strip %}
-                {% if page_type == 'collection' %}
-                  {% render 'bookstore-collection-filter', filter_style: 'vertical', collection: collection, in_drawer: true %}
-                {% endif %}
-                {% render 'bookstore-entity-sidebar-filter',
-                  filters: filters,
-                  collection: collection,
-                  filter_style: 'vertical',
-                  in_drawer: true,
-                  section_id: section.id
-                %}
                 {% if rendered_drawer_filters_stripped == blank and page_type == 'collection' and collection.handle == 'all' %}
-                  {% render 'bookstore-all-collection-fallback-filters', filters: filters %}
+                  {% render 'bookstore-collection-filter',
+                    filter_style: 'vertical',
+                    collection: collection,
+                    filters: filters,
+                    in_drawer: true
+                  %}
+                  {% render 'bookstore-all-collection-fallback-filters' %}
+                {% elsif is_author_results_page or is_publisher_results_page %}
+                  {% render 'bookstore-entity-sidebar-filter',
+                    filters: filters,
+                    collection: collection,
+                    filter_style: 'vertical',
+                    in_drawer: true,
+                    section_id: section.id
+                  %}
+                  {% render 'bookstore-collection-filter',
+                    filter_style: 'vertical',
+                    collection: collection,
+                    filters: filters,
+                    in_drawer: true
+                  %}
                 {% else %}
+                  {% if page_type == 'collection' %}
+                    {% render 'bookstore-collection-filter',
+                      filter_style: 'vertical',
+                      collection: collection,
+                      filters: filters,
+                      in_drawer: true
+                    %}
+                  {% endif %}
+                  {% render 'bookstore-entity-sidebar-filter',
+                    filters: filters,
+                    collection: collection,
+                    filter_style: 'vertical',
+                    in_drawer: true,
+                    section_id: section.id
+                  %}
+                {% endif %}
+                {% if rendered_drawer_filters_stripped != blank %}
                   {{ rendered_drawer_filters }}
                 {% endif %}
               </div>

@@ -41,6 +41,30 @@ function mergeBookstorePersistentQueryParams(targetUrl) {
   return nextUrl;
 }
 
+function addUniqueBookstoreFilterValue(params, name, value) {
+  const cleanValue = String(value || '').trim();
+  if (!cleanValue || cleanValue === '*') return;
+
+  const exists = params.getAll(name).some((currentValue) => {
+    return currentValue.trim().toLowerCase() === cleanValue.toLowerCase();
+  });
+
+  if (!exists) params.append(name, cleanValue);
+}
+
+function useAllProductsForVendorFacetURL(url, urlParameters) {
+  if (url.pathname !== '/collections/vendors') return;
+
+  const currentUrl = new URL(window.location.href);
+  addUniqueBookstoreFilterValue(urlParameters, 'filter.p.vendor', currentUrl.searchParams.get('q'));
+
+  url.pathname = '/collections/all';
+  urlParameters.delete('q');
+  urlParameters.delete('type');
+  urlParameters.delete('view');
+  urlParameters.delete('options[prefix]');
+}
+
 /**
  * Handles the main facets form functionality
  *
@@ -128,6 +152,8 @@ class FacetsFormComponent extends Component {
   #updateURLHash() {
     const url = new URL(window.location.href);
     const urlParameters = this.createURLParameters();
+
+    useAllProductsForVendorFacetURL(url, urlParameters);
 
     url.search = '';
     for (const [param, value] of urlParameters.entries()) {
@@ -326,6 +352,8 @@ class FacetInputsComponent extends Component {
 
     const urlParameters = facetsForm.createURLParameters(formData);
     const url = new URL(window.location.pathname, window.location.origin);
+
+    useAllProductsForVendorFacetURL(url, urlParameters);
 
     for (const [key, value] of urlParameters) url.searchParams.append(key, value);
 

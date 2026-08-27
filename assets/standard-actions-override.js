@@ -153,8 +153,8 @@ function initCollectionPublisherChips() {
   });
 
   if (initialVendor && input) {
-    input.value = initialVendor;
-    applyCollectionPageSearch(initialVendor, true, true);
+    input.value = initialSearch;
+    applyCollectionVendorFilterFromURL(true);
     setActiveChip(initialVendor);
   } else {
     setActiveChip(initialSearch);
@@ -202,10 +202,8 @@ function productItemMatchesVendor(item, vendor) {
   const normalizedVendor = normalizeCollectionSearchText(vendor);
   if (!normalizedVendor) return true;
 
-  const itemVendor = item.getAttribute('data-bookstore-product-vendor');
-  if (itemVendor) {
-    return normalizeCollectionSearchText(itemVendor) === normalizedVendor;
-  }
+  const exactVendor = normalizeCollectionSearchText(item.getAttribute('data-bookstore-product-vendor') || '');
+  if (exactVendor) return exactVendor === normalizedVendor;
 
   const rawText = item.getAttribute('data-collection-search-text') || item.textContent || '';
   const searchableText = normalizeCollectionSearchText(rawText);
@@ -302,32 +300,50 @@ async function loadAllCollectionPagesForVendorFilter(vendor) {
     Array.from(grid.querySelectorAll('.product-grid__item[data-product-id]')).map((item) => item.getAttribute('data-product-id'))
   );
 
-  for (let page = 2; page <= lastPage; page += 1) {
-    const url = buildBookstoreSectionPageUrl(page, sectionId);
+  const matchedPages = [];
+  let nextPage = 2;
 
+  async function loadVendorPage(page) {
+    const url = buildBookstoreSectionPageUrl(page, sectionId);
     try {
       const response = await fetch(url.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-      if (!response.ok) continue;
+      if (!response.ok) return;
 
       const html = await response.text();
       const doc = new DOMParser().parseFromString(html, 'text/html');
       const nextItems = Array.from(doc.querySelectorAll('.product-grid__item[data-product-id]'));
+      const matchingItems = nextItems.filter((item) => productItemMatchesVendor(item, vendor));
 
-      nextItems.forEach((item) => {
-        const productId = item.getAttribute('data-product-id');
-        if (!productId || existingIds.has(productId)) return;
-        existingIds.add(productId);
-
-        if (productItemMatchesVendor(item, vendor)) {
-          item.hidden = false;
-          item.style.display = '';
-          grid.appendChild(item);
-        }
-      });
+      matchedPages.push({ page, items: matchingItems });
     } catch (error) {
       // Keep current visible matches if one extra page request fails.
     }
   }
+
+  const workerCount = Math.min(6, Math.max(1, lastPage - 1));
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      while (nextPage <= lastPage) {
+        const page = nextPage;
+        nextPage += 1;
+        await loadVendorPage(page);
+      }
+    })
+  );
+
+  matchedPages
+    .sort((a, b) => a.page - b.page)
+    .forEach(({ items: pageItems }) => {
+      pageItems.forEach((item) => {
+        const productId = item.getAttribute('data-product-id');
+        if (!productId || existingIds.has(productId)) return;
+        existingIds.add(productId);
+
+        item.hidden = false;
+        item.style.display = '';
+        grid.appendChild(item);
+      });
+    });
 
   grid.dataset.vendorFilterLoaded = vendor;
 }
@@ -351,13 +367,49 @@ async function applyCollectionVendorFilterFromURL(loadAllPages = false) {
     visibleCount = filterExistingCollectionItemsByVendor(vendor);
   }
 
+  document.documentElement.classList.remove('bookstore-filtering-pending');
+
   return visibleCount;
 }
 
 function initBookstoreCollectionVendorFilter() {
-  if (!getCollectionVendorFilter()) return;
+  const selectedVendors = new URL(window.location.href).searchParams
+    .getAll('filter.p.vendor')
+    .filter((value) => value && value.trim());
+
+  if (selectedVendors.length > 1) {
+    document.documentElement.classList.remove('bookstore-filtering-pending');
+    return;
+  }
+
+  const vendor = getCollectionVendorFilter();
+  if (!vendor) {
+    document.documentElement.classList.remove('bookstore-filtering-pending');
+    return;
+  }
 
   applyCollectionVendorFilterFromURL(true);
+  initBookstoreVendorFilterObserver();
+}
+
+function initBookstoreVendorFilterObserver() {
+  const vendor = getCollectionVendorFilter();
+  if (!vendor || window.__bookstoreVendorFilterObserverReady) return;
+
+  const grid = getCollectionSearchGrid();
+  if (!grid) return;
+
+  window.__bookstoreVendorFilterObserverReady = true;
+  let timer = 0;
+
+  const observer = new MutationObserver(() => {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(() => {
+      filterExistingCollectionItemsByVendor(getCollectionVendorFilter());
+    }, 50);
+  });
+
+  observer.observe(grid, { childList: true });
 }
 
 async function loadAllCollectionPagesForSearch(query) {
@@ -594,9 +646,9 @@ function renderBookstoreActiveQueryPills() {
 
       pill.addEventListener('click', () => {
         const nextUrl = new URL(window.location.href);
-        nextUrl.searchParams.delete(filter.param);
 
         if (filter.param === 'collection_search') {
+          nextUrl.searchParams.delete(filter.param);
           document.querySelectorAll('[data-bookstore-collection-search-input], input[name="collection_search"]').forEach((input) => {
             input.value = '';
           });
@@ -604,6 +656,8 @@ function renderBookstoreActiveQueryPills() {
           renderBookstoreActiveQueryPills();
           return;
         }
+
+        nextUrl.searchParams.delete(filter.param);
 
         if (filter.param === 'filter.p.m.custom.author') {
           nextUrl.searchParams.delete('author');
@@ -994,21 +1048,145 @@ if (document.readyState === 'loading') {
 
 document.addEventListener('shopify:section:load', initBookstoreSortPills);
 
+const titleCaseBookstoreAuthorName = (authorName) => String(authorName || '')
+  .trim()
+  .toLowerCase()
+  .replace(/\b([a-z])/g, (match) => match.toUpperCase());
+
+function initBookstoreAuthorUrlCanonicalizer() {
+  const url = new URL(window.location.href);
+  if (url.pathname !== '/search' || url.searchParams.get('view') !== 'author') return;
+
+  const authorName = (url.searchParams.get('author') || url.searchParams.get('filter.p.m.custom.author') || '').trim();
+  if (!authorName || authorName === '*' || /[A-Z]/.test(authorName)) return;
+
+  const canonicalAuthorName = titleCaseBookstoreAuthorName(authorName);
+  if (!canonicalAuthorName || canonicalAuthorName === authorName) return;
+
+  url.searchParams.set('author', canonicalAuthorName);
+  url.searchParams.set('filter.p.m.custom.author', canonicalAuthorName);
+  url.searchParams.delete('page');
+  window.location.replace(`${url.pathname}${url.search}${url.hash}`);
+}
+
 function initBookstoreAuthorSidebarSearch() {
-  document.querySelectorAll('[data-author-sidebar-search]').forEach((form) => {
-    if (form.dataset.bookstoreAuthorSidebarReady === 'true') return;
+  document.querySelectorAll('[data-author-sidebar-search]').forEach((container) => {
+    if (container.dataset.bookstoreAuthorSidebarReady === 'true') return;
 
-    form.dataset.bookstoreAuthorSidebarReady = 'true';
-    const input = form.querySelector('input[name="author"]');
-    const filterInput = form.querySelector('[data-author-sidebar-filter-value]');
+    container.dataset.bookstoreAuthorSidebarReady = 'true';
+    const input = container.querySelector('[data-author-search-input], input[name="author"]');
+    const button = container.querySelector('[data-author-search-submit], button[type="submit"], button');
+    const filterInput = container.querySelector('[data-author-sidebar-filter-value]');
+    const details = container.closest('.bookstore-entity-facet--author-search');
+    const rows = Array.from(details?.querySelectorAll('.bookstore-author-filter-row') || []);
 
-    const syncAuthorValue = () => {
-      const authorName = String(input?.value || '').trim();
-      if (filterInput) filterInput.value = authorName;
+    const getAuthorName = () => String(input?.value || '').trim();
+
+    const findVisibleCanonicalAuthor = (authorName) => {
+      const normalizedAuthor = normalizeCollectionSearchText(authorName);
+      if (!normalizedAuthor) return '';
+
+      const exactRow = rows.find((row) => {
+        return normalizeCollectionSearchText(row.textContent || '') === normalizedAuthor;
+      });
+
+      if (exactRow) return String(exactRow.textContent || '').trim();
+
+      const startsWithRow = rows.find((row) => {
+        return normalizeCollectionSearchText(row.textContent || '').startsWith(normalizedAuthor);
+      });
+
+      return startsWithRow ? String(startsWithRow.textContent || '').trim() : '';
     };
 
-    input?.addEventListener('input', syncAuthorValue);
-    form.addEventListener('submit', syncAuthorValue);
+    const syncAuthorValue = () => {
+      const authorName = getAuthorName();
+      if (filterInput) filterInput.value = authorName;
+      return authorName;
+    };
+
+    const filterAuthorRows = () => {
+      const query = normalizeCollectionSearchText(getAuthorName());
+      rows.forEach((row) => {
+        const item = row.closest('.facets__inputs-list-item');
+        const label = normalizeCollectionSearchText(row.textContent || '');
+        const isMatch = !query || label.includes(query);
+        if (item) item.hidden = !isMatch;
+      });
+    };
+
+    const openAuthorSearch = () => {
+      const typedAuthorName = syncAuthorValue();
+      const authorName = findVisibleCanonicalAuthor(typedAuthorName) || titleCaseBookstoreAuthorName(typedAuthorName);
+      if (!authorName) return;
+
+      const url = new URL('/search', window.location.origin);
+      url.searchParams.set('view', 'author');
+      url.searchParams.set('type', 'product');
+      url.searchParams.set('q', '*');
+      url.searchParams.set('filter.p.m.custom.author', authorName);
+      url.searchParams.set('author', authorName);
+      window.location.href = `${url.pathname}${url.search}`;
+    };
+
+    input?.addEventListener('input', () => {
+      syncAuthorValue();
+      filterAuthorRows();
+    });
+
+    const handleAuthorSearchEnter = (event) => {
+      if (event.key !== 'Enter' && event.code !== 'Enter' && event.code !== 'NumpadEnter') return;
+      event.preventDefault();
+      event.stopPropagation();
+      openAuthorSearch();
+    };
+
+    input?.addEventListener('keydown', handleAuthorSearchEnter, true);
+    input?.addEventListener('keypress', handleAuthorSearchEnter, true);
+    input?.addEventListener('keyup', handleAuthorSearchEnter, true);
+
+    button?.addEventListener('click', (event) => {
+      event.preventDefault();
+      openAuthorSearch();
+    });
+
+    container.addEventListener('submit', (event) => {
+      event.preventDefault();
+      openAuthorSearch();
+    });
+
+  });
+
+  if (!window.__bookstoreAuthorSearchEnterFallbackReady) {
+    window.__bookstoreAuthorSearchEnterFallbackReady = true;
+    document.addEventListener(
+      'keydown',
+      (event) => {
+        if (event.key !== 'Enter' && event.code !== 'Enter' && event.code !== 'NumpadEnter') return;
+        const target = event.target instanceof Element ? event.target : null;
+        const input = target?.closest?.('[data-author-search-input]');
+        if (!input) return;
+
+        const container = input.closest('[data-author-sidebar-search]');
+        const button = container?.querySelector('[data-author-search-submit]');
+        if (!button) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        button.click();
+      },
+      true
+    );
+  }
+
+  document.querySelectorAll('[data-author-filter-option]').forEach((input) => {
+    if (input.dataset.bookstoreAuthorOptionReady === 'true') return;
+
+    input.dataset.bookstoreAuthorOptionReady = 'true';
+    input.addEventListener('change', () => {
+      const targetUrl = input.getAttribute('data-author-url');
+      if (targetUrl) window.location.href = targetUrl;
+    });
   });
 }
 
@@ -1031,6 +1209,7 @@ function initBookstorePolicyHeadings() {
 }
 
 function initBookstoreDocChangeFixes() {
+  initBookstoreAuthorUrlCanonicalizer();
   initBookstoreAuthorSidebarSearch();
   initBookstorePolicyHeadings();
   renderBookstoreActiveQueryPills();
@@ -1119,3 +1298,150 @@ if (document.readyState === 'loading') {
 }
 
 document.addEventListener('shopify:section:load', () => sanitizeBookstoreVisibleText(document));
+
+function getBookstorePreservedCategoryParams() {
+  const current = new URL(window.location.href);
+  const params = new URLSearchParams();
+
+  for (const [name, value] of current.searchParams.entries()) {
+    if (!value || name === 'page' || name === 'section_id') continue;
+
+    if (
+      name.startsWith('filter.') ||
+      name === 'author' ||
+      name === 'collection_search' ||
+      name === 'sort_by'
+    ) {
+      params.append(name, value);
+    }
+  }
+
+  if (current.pathname === '/collections/vendors') {
+    const vendor = current.searchParams.get('q') || '';
+    if (vendor && !params.has('filter.p.vendor')) {
+      params.set('filter.p.vendor', vendor);
+    }
+  }
+
+  return params;
+}
+
+function rewriteBookstoreCategoryFilterLinks(root = document) {
+  const scope = root instanceof Element ? root : document;
+  const preserved = getBookstorePreservedCategoryParams();
+
+  if ([...preserved.keys()].length === 0) return;
+
+  scope.querySelectorAll?.('.bookstore-collection-facet__link[href*="/collections/"]').forEach((link) => {
+    if (!(link instanceof HTMLAnchorElement)) return;
+
+    const target = new URL(link.href, window.location.origin);
+    if (!target.pathname.startsWith('/collections/')) return;
+    if (target.pathname === '/collections/vendors') return;
+
+    preserved.forEach((value, name) => {
+      if (!target.searchParams.has(name)) {
+        target.searchParams.append(name, value);
+      }
+    });
+
+    target.searchParams.delete('page');
+    link.href = `${target.pathname}${target.search}${target.hash}`;
+  });
+}
+
+function rewriteBookstoreSortPillLinks(root = document) {
+  const scope = root instanceof Element ? root : document;
+  const current = new URL(window.location.href);
+
+  scope.querySelectorAll?.('[data-bookstore-sort-pill]').forEach((link) => {
+    if (!(link instanceof HTMLAnchorElement)) return;
+
+    const target = new URL(current.href);
+    const pillUrl = new URL(link.href, window.location.origin);
+    const sortValue = link.dataset.sortValue || pillUrl.searchParams.get('sort_by') || '';
+
+    if (!sortValue) return;
+
+    target.searchParams.set('sort_by', sortValue);
+    target.searchParams.delete('page');
+    link.href = `${target.pathname}${target.search}${target.hash}`;
+  });
+}
+
+function initBookstoreCategoryFilterLinks() {
+  rewriteBookstoreCategoryFilterLinks(document);
+  rewriteBookstoreSortPillLinks(document);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initBookstoreCategoryFilterLinks, { once: true });
+} else {
+  initBookstoreCategoryFilterLinks();
+}
+
+document.addEventListener('shopify:section:load', (event) => {
+  const target = event.target instanceof Element ? event.target : document;
+  rewriteBookstoreCategoryFilterLinks(target);
+  rewriteBookstoreSortPillLinks(target);
+});
+
+function initBookstoreEntityFilterTools(root = document) {
+  const scope = root instanceof Element ? root : document;
+
+  scope.querySelectorAll?.('[data-entity-filter-search]').forEach((container) => {
+    if (container.dataset.bookstoreEntitySearchReady === 'true') return;
+
+    container.dataset.bookstoreEntitySearchReady = 'true';
+    const input = container.querySelector('[data-entity-filter-search-input]');
+    const button = container.querySelector('[data-entity-filter-search-button]');
+    const details = container.closest('.bookstore-entity-facet');
+    const rows = Array.from(details?.querySelectorAll('.facets__inputs-list-item') || []);
+
+    const applySearch = () => {
+      const query = normalizeCollectionSearchText(input?.value || '');
+      rows.forEach((row) => {
+        const label = normalizeCollectionSearchText(row.textContent || '');
+        const matches = !query || label.includes(query);
+        row.hidden = !matches;
+        if (matches) row.removeAttribute('data-entity-extra-item');
+      });
+    };
+
+    input?.addEventListener('input', applySearch);
+    input?.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.code !== 'Enter' && event.code !== 'NumpadEnter') return;
+      event.preventDefault();
+      event.stopPropagation();
+      applySearch();
+    });
+    button?.addEventListener('click', (event) => {
+      event.preventDefault();
+      applySearch();
+    });
+  });
+
+  scope.querySelectorAll?.('[data-entity-show-more]').forEach((button) => {
+    if (button.dataset.bookstoreEntityShowMoreReady === 'true') return;
+
+    button.dataset.bookstoreEntityShowMoreReady = 'true';
+    button.addEventListener('click', () => {
+      const details = button.closest('.bookstore-entity-facet');
+      details?.querySelectorAll('[data-entity-extra-item]').forEach((item) => {
+        item.hidden = false;
+        item.removeAttribute('data-entity-extra-item');
+      });
+      button.remove();
+    });
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => initBookstoreEntityFilterTools(document), { once: true });
+} else {
+  initBookstoreEntityFilterTools(document);
+}
+
+document.addEventListener('shopify:section:load', (event) => {
+  initBookstoreEntityFilterTools(event.target instanceof Element ? event.target : document);
+});
