@@ -1867,6 +1867,19 @@ function getBookstorePreservedCategoryParams() {
   return params;
 }
 
+function appendUniqueBookstoreSearchParam(params, name, value) {
+  if (!name || !value) return;
+
+  const normalizedValue = normalizeCollectionSearchText(value);
+  const alreadyExists = params.getAll(name).some((currentValue) => {
+    return normalizeCollectionSearchText(currentValue) === normalizedValue;
+  });
+
+  if (!alreadyExists) {
+    params.append(name, value);
+  }
+}
+
 function rewriteBookstoreCategoryFilterLinks(root = document) {
   const scope = root instanceof Element ? root : document;
   const current = new URL(window.location.href);
@@ -1890,9 +1903,7 @@ function rewriteBookstoreCategoryFilterLinks(root = document) {
 
       preserved.forEach((value, name) => {
         if (name === 'bookstore_category') return;
-        if (!target.searchParams.has(name)) {
-          target.searchParams.append(name, value);
-        }
+        appendUniqueBookstoreSearchParam(target.searchParams, name, value);
       });
 
       target.searchParams.delete('page');
@@ -1927,9 +1938,7 @@ function rewriteBookstoreCategoryFilterLinks(root = document) {
       link.href = `${next.pathname}${next.search}${next.hash}`;
     } else {
       preserved.forEach((value, name) => {
-        if (!target.searchParams.has(name)) {
-          target.searchParams.append(name, value);
-        }
+        appendUniqueBookstoreSearchParam(target.searchParams, name, value);
       });
 
       target.searchParams.delete('page');
