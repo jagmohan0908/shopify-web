@@ -269,6 +269,8 @@ function cleanupBookstorePublisherFilterUrl() {
 
   const vendors = getCollectionVendorFilters(current);
   const shouldNormalize =
+    current.searchParams.has('page') ||
+    Boolean(current.hash) ||
     current.searchParams.getAll('filter.p.vendor').length !== vendors.length ||
     Array.from(current.searchParams.entries()).some(([name, value]) => {
       const cleanValue = String(value || '').trim();
@@ -670,17 +672,9 @@ async function applyCollectionExtraCategoryFiltersFromURL(loadAllPages = false) 
 }
 
 function initBookstoreCollectionVendorFilter() {
-  const selectedVendors = new URL(window.location.href).searchParams
-    .getAll('filter.p.vendor')
-    .filter((value) => value && value.trim());
+  const selectedVendors = getCollectionVendorFilters();
 
-  if (selectedVendors.length > 1) {
-    document.documentElement.classList.remove('bookstore-filtering-pending');
-    return;
-  }
-
-  const vendor = getCollectionVendorFilter();
-  if (!vendor) {
+  if (!selectedVendors.length) {
     document.documentElement.classList.remove('bookstore-filtering-pending');
     return;
   }
