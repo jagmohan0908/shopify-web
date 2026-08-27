@@ -659,6 +659,21 @@ html.bookstore-filtering-pending main[data-template^="search"] .product-grid-con
   -webkit-line-clamp: 2;
 }
 
+.section-bestseller-lists .sb-bestseller-list__details {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.section-bestseller-lists .sb-bestseller-list__price {
+  color: var(--sb-section-accent, #b6191a) !important;
+  display: block;
+  font-family: var(--font-body--family, system-ui, sans-serif);
+  font-size: .8rem !important;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
 .section-bestseller-lists .sb-bestseller-list a:hover strong {
   color: var(--sb-section-accent, #b6191a) !important;
 }

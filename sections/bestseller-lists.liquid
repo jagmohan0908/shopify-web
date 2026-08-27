@@ -47,7 +47,16 @@
                     {% render 'bookstore-sample-cover', title: product.title, product: product %}
                   {% endif %}
                 </span>
-                <strong title="{{ product.title | escape }}">{{ product.title }}</strong>
+                <div class="sb-bestseller-list__details">
+                  <strong title="{{ product.title | escape }}">{{ product.title }}</strong>
+                  <span class="sb-bestseller-list__price">
+                    {% if product.price_varies %}
+                      From {{ product.price_min | money }}
+                    {% else %}
+                      {{ product.price | money }}
+                    {% endif %}
+                  </span>
+                </div>
               </a>
             {% endif %}
           {% endfor %}
@@ -64,7 +73,16 @@
                     {% render 'bookstore-sample-cover', title: product.title, product: product %}
                   {% endif %}
                 </span>
-                <strong title="{{ product.title | escape }}">{{ product.title }}</strong>
+                <div class="sb-bestseller-list__details">
+                  <strong title="{{ product.title | escape }}">{{ product.title }}</strong>
+                  <span class="sb-bestseller-list__price">
+                    {% if product.price_varies %}
+                      From {{ product.price_min | money }}
+                    {% else %}
+                      {{ product.price | money }}
+                    {% endif %}
+                  </span>
+                </div>
               </a>
             {% else %}
               <p class="sb-bestseller-empty">Choose a collection with products to show this list.</p>
