@@ -434,6 +434,19 @@ function getBookstoreExtraCategoryFilters(url = new URL(window.location.href)) {
     .filter(Boolean);
 }
 
+function getBookstoreSelectedCategoryHandles(url = new URL(window.location.href)) {
+  const handles = [];
+  const currentHandle = getBookstoreCollectionHandleFromPath(url.pathname);
+
+  if (currentHandle) handles.push(currentHandle);
+  getBookstoreExtraCategoryFilters(url).forEach((handle) => handles.push(handle));
+
+  return handles.filter((handle, index) => {
+    if (!handle || handle === 'all') return false;
+    return handles.indexOf(handle) === index;
+  });
+}
+
 function productItemMatchesCollectionHandle(item, handle) {
   const normalizedHandle = normalizeCollectionSearchText(handle);
   if (!normalizedHandle) return true;
@@ -457,7 +470,7 @@ function productItemMatchesExtraCategories(item, url = new URL(window.location.h
   const selectedCategories = getBookstoreExtraCategoryFilters(url);
   if (!selectedCategories.length) return true;
 
-  return selectedCategories.every((handle) => productItemMatchesCollectionHandle(item, handle));
+  return selectedCategories.some((handle) => productItemMatchesCollectionHandle(item, handle));
 }
 
 function productItemMatchesCurrentCollectionPath(item, url = new URL(window.location.href)) {
@@ -468,7 +481,10 @@ function productItemMatchesCurrentCollectionPath(item, url = new URL(window.loca
 }
 
 function productItemMatchesActiveCategories(item, url = new URL(window.location.href)) {
-  return productItemMatchesCurrentCollectionPath(item, url) && productItemMatchesExtraCategories(item, url);
+  const selectedCategories = getBookstoreSelectedCategoryHandles(url);
+  if (!selectedCategories.length) return true;
+
+  return selectedCategories.some((handle) => productItemMatchesCollectionHandle(item, handle));
 }
 
 function getCollectionTotalCount() {
@@ -654,20 +670,20 @@ async function applyCollectionVendorFilterFromURL(loadAllPages = false) {
 }
 
 async function loadAllCollectionPagesForExtraCategoryFilters() {
-  const selectedCategories = getBookstoreExtraCategoryFilters();
+  const selectedCategories = getBookstoreSelectedCategoryHandles();
   if (!selectedCategories.length) return;
 
   const resultsList = document.querySelector('main[data-template^="collection"] results-list[section-id]');
   const grid = getCollectionSearchGrid();
   const vendorKey = getCollectionVendorFilters().join('|');
-  const loadedKey = `${selectedCategories.join('|')}:${vendorKey}`;
+  const searchKey = new URL(window.location.href).searchParams.get('collection_search') || '';
+  const loadedKey = `${selectedCategories.join('|')}:${vendorKey}:${searchKey}`;
 
   if (!resultsList || !grid || grid.dataset.categoryFilterLoaded === loadedKey) return;
 
   const sectionId = resultsList.getAttribute('section-id');
-  const lastPage = Number(grid.dataset.lastPage || 1);
 
-  if (!sectionId || !lastPage || lastPage <= 1) {
+  if (!sectionId) {
     grid.dataset.categoryFilterLoaded = loadedKey;
     return;
   }
@@ -677,39 +693,79 @@ async function loadAllCollectionPagesForExtraCategoryFilters() {
   );
 
   const matchedPages = [];
-  let nextPage = 2;
+  const currentHandle = getBookstoreCollectionHandleFromPath(window.location.pathname);
 
-  async function loadCategoryPage(page) {
-    const url = buildBookstoreSectionPageUrl(page, sectionId, { omitClientSideFilters: true });
+  function buildCategoryPageUrl(handle, page) {
+    const url = new URL(`/collections/${encodeURIComponent(handle)}`, window.location.origin);
+    const current = new URL(window.location.href);
+
+    current.searchParams.forEach((value, name) => {
+      if (!value || name === 'page' || name === 'section_id' || name === 'bookstore_category') return;
+      url.searchParams.append(name, value);
+    });
+
+    if (page > 1) url.searchParams.set('page', String(page));
+    url.searchParams.set('section_id', sectionId);
+    return url;
+  }
+
+  async function loadCategoryPage(handle, page) {
+    const url = buildCategoryPageUrl(handle, page);
 
     try {
       const response = await fetch(url.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-      if (!response.ok) return;
+      if (!response.ok) return { handle, page, pages: 1, items: [] };
 
       const html = await response.text();
       const doc = new DOMParser().parseFromString(html, 'text/html');
       const nextItems = Array.from(doc.querySelectorAll('.product-grid__item[data-product-id]'));
       const matchingItems = nextItems.filter((item) => productItemMatchesSelectedVendors(item) && productItemMatchesActiveCategories(item));
+      const pages = Number(doc.querySelector('.product-grid[data-last-page]')?.getAttribute('data-last-page') || 1);
 
-      matchedPages.push({ page, items: matchingItems });
+      return { handle, page, pages, items: matchingItems };
     } catch (error) {
       // Keep current visible matches if one extra page request fails.
+      return { handle, page, pages: 1, items: [] };
     }
   }
 
-  const workerCount = Math.min(6, Math.max(1, lastPage - 1));
+  const firstPageTasks = selectedCategories
+    .filter((handle) => handle !== currentHandle)
+    .map((handle) => loadCategoryPage(handle, 1));
+
+  const firstPages = await Promise.all(firstPageTasks);
+  firstPages.forEach((result) => matchedPages.push(result));
+
+  const remainingPages = [];
+  if (currentHandle && selectedCategories.includes(currentHandle)) {
+    const currentLastPage = Number(grid.dataset.lastPage || 1);
+    for (let page = 2; page <= currentLastPage; page += 1) {
+      remainingPages.push({ handle: currentHandle, page });
+    }
+  }
+  firstPages.forEach((result) => {
+    for (let page = 2; page <= result.pages; page += 1) {
+      remainingPages.push({ handle: result.handle, page });
+    }
+  });
+
+  let nextPageIndex = 0;
+  const workerCount = Math.min(6, Math.max(1, remainingPages.length));
   await Promise.all(
     Array.from({ length: workerCount }, async () => {
-      while (nextPage <= lastPage) {
-        const page = nextPage;
-        nextPage += 1;
-        await loadCategoryPage(page);
+      while (nextPageIndex < remainingPages.length) {
+        const task = remainingPages[nextPageIndex];
+        nextPageIndex += 1;
+        matchedPages.push(await loadCategoryPage(task.handle, task.page));
       }
     })
   );
 
   matchedPages
-    .sort((a, b) => a.page - b.page)
+    .sort((a, b) => {
+      const handleDiff = selectedCategories.indexOf(a.handle) - selectedCategories.indexOf(b.handle);
+      return handleDiff || a.page - b.page;
+    })
     .forEach(({ items: pageItems }) => {
       pageItems.forEach((item) => {
         const productId = item.getAttribute('data-product-id');
