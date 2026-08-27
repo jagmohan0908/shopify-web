@@ -607,25 +607,101 @@ function renderBookstoreActiveQueryPills() {
   });
 }
 
+function getBookstoreFilterLabel(param) {
+  const labels = {
+    collection_search: 'Search',
+    'filter.p.vendor': 'Publisher',
+    'filter.p.m.custom.author': 'Author',
+    'filter.p.m.custom.language': 'Language',
+    'filter.p.m.custom.format': 'Format',
+    'filter.v.availability': 'Availability',
+    'filter.p.product_type': 'Category',
+    'filter.p.m.custom.categories': 'Category',
+    'filter.p.tag': 'Category',
+  };
+
+  if (labels[param]) return labels[param];
+
+  return param
+    .replace(/^filter\.[a-z]\./, '')
+    .replace(/^m\.custom\./, '')
+    .replace(/^custom\./, '')
+    .replace(/\./g, ' ')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function getBookstoreFilterValueLabel(param, value) {
+  if (param === 'filter.v.availability') {
+    if (value === '1') return 'In stock';
+    if (value === '0') return 'Out of stock';
+  }
+
+  return value;
+}
+
+function removeSingleBookstoreSearchParam(params, name, value) {
+  const values = params.getAll(name);
+  let removed = false;
+
+  params.delete(name);
+
+  values.forEach((currentValue) => {
+    if (!removed && currentValue === value) {
+      removed = true;
+      return;
+    }
+
+    params.append(name, currentValue);
+  });
+}
+
 function renderBookstoreActiveQueryPills() {
   const url = new URL(window.location.href);
-  const activeFilters = [
-    {
+  const activeFilters = [];
+  const handledParams = new Set(['filter.v.price.gte', 'filter.v.price.lte']);
+  const query = (url.searchParams.get('collection_search') || '').trim();
+  const minPrice = (url.searchParams.get('filter.v.price.gte') || '').trim();
+  const maxPrice = (url.searchParams.get('filter.v.price.lte') || '').trim();
+
+  if (query && query !== '*') {
+    activeFilters.push({
       param: 'collection_search',
       label: 'Search',
-      value: (url.searchParams.get('collection_search') || '').trim(),
-    },
-    {
-      param: 'filter.p.vendor',
-      label: 'Publisher',
-      value: (url.searchParams.get('filter.p.vendor') || '').trim(),
-    },
-    {
-      param: 'filter.p.m.custom.author',
-      label: 'Author',
-      value: (url.searchParams.get('filter.p.m.custom.author') || url.searchParams.get('author') || '').trim(),
-    },
-  ].filter((filter) => filter.value && filter.value !== '*');
+      value: query,
+    });
+  }
+
+  if (minPrice || maxPrice) {
+    activeFilters.push({
+      param: 'bookstore_price_range',
+      label: 'Price',
+      value: `${minPrice || '0'} - ${maxPrice || 'Max'}`,
+    });
+  }
+
+  for (const [param, rawValue] of url.searchParams.entries()) {
+    const value = (rawValue || '').trim();
+    if (!param.startsWith('filter.') || handledParams.has(param) || !value || value === '*') continue;
+
+    activeFilters.push({
+      param,
+      label: getBookstoreFilterLabel(param),
+      value,
+      displayValue: getBookstoreFilterValueLabel(param, value),
+    });
+  }
+
+  if (!url.searchParams.has('filter.p.m.custom.author')) {
+    const author = (url.searchParams.get('author') || '').trim();
+    if (author && author !== '*') {
+      activeFilters.push({
+        param: 'author',
+        label: 'Author',
+        value: author,
+      });
+    }
+  }
 
   document.querySelectorAll('[data-bookstore-query-pill]').forEach((pill) => pill.remove());
 
@@ -644,6 +720,8 @@ function renderBookstoreActiveQueryPills() {
       pill.setAttribute('data-bookstore-query-param', filter.param);
       pill.innerHTML = `<span>${escapeCollectionSearchHtml(filter.label)}: ${escapeCollectionSearchHtml(filter.value)}</span><span aria-hidden="true">×</span><span class="visually-hidden">Remove ${escapeCollectionSearchHtml(filter.label)} filter</span>`;
 
+      pill.innerHTML = `<span>${escapeCollectionSearchHtml(filter.label)}: ${escapeCollectionSearchHtml(filter.displayValue || filter.value)}</span><span aria-hidden="true">&times;</span><span class="visually-hidden">Remove ${escapeCollectionSearchHtml(filter.label)} filter</span>`;
+
       pill.addEventListener('click', () => {
         const nextUrl = new URL(window.location.href);
 
@@ -657,9 +735,14 @@ function renderBookstoreActiveQueryPills() {
           return;
         }
 
-        nextUrl.searchParams.delete(filter.param);
+        if (filter.param === 'bookstore_price_range') {
+          nextUrl.searchParams.delete('filter.v.price.gte');
+          nextUrl.searchParams.delete('filter.v.price.lte');
+        } else {
+          removeSingleBookstoreSearchParam(nextUrl.searchParams, filter.param, filter.value);
+        }
 
-        if (filter.param === 'filter.p.m.custom.author') {
+        if (filter.param === 'filter.p.m.custom.author' || filter.param === 'author') {
           nextUrl.searchParams.delete('author');
           if (nextUrl.searchParams.get('view') === 'author') nextUrl.searchParams.delete('view');
         }
