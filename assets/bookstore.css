@@ -515,7 +515,7 @@ html.bookstore-filtering-pending main[data-template^="collection"] .bookstore-pr
 
 .bookstore-product-grid-skeleton {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 26px 24px;
   width: 100%;
 }
@@ -552,6 +552,23 @@ html.bookstore-filtering-pending main[data-template^="collection"] .bookstore-pr
 @keyframes bookstore-product-skeleton {
   100% {
     transform: translateX(100%);
+  }
+}
+
+@media (max-width: 749px) {
+  .bookstore-product-grid-skeleton {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 12px;
+  }
+
+  .bookstore-product-grid-skeleton__item {
+    min-height: 255px;
+    background:
+      linear-gradient(#edf2fb, #edf2fb) 12px 12px / calc(100% - 24px) 150px no-repeat,
+      linear-gradient(#e2e8f4, #e2e8f4) 12px 178px / 58% 10px no-repeat,
+      linear-gradient(#e2e8f4, #e2e8f4) 12px 202px / 82% 12px no-repeat,
+      linear-gradient(#dbe3f1, #dbe3f1) 12px 230px / 48% 12px no-repeat,
+      #fff;
   }
 }
 

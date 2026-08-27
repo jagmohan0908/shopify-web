@@ -532,6 +532,62 @@ function setBookstoreFilterLoadingState(isLoading) {
   });
 }
 
+function getBookstoreVendorGridCacheKey() {
+  const url = new URL(window.location.href);
+  const selectedVendors = getCollectionVendorFilters(url);
+  if (!selectedVendors.length) return '';
+
+  const keyParts = [
+    'bookstoreVendorGrid:v2',
+    url.pathname === '/collections/vendors' ? '/collections/all' : url.pathname,
+    selectedVendors.map((vendor) => normalizeCollectionSearchText(vendor)).sort().join('|'),
+    getBookstoreExtraCategoryFilters(url).map((handle) => normalizeCollectionSearchText(handle)).sort().join('|'),
+    url.searchParams.get('sort_by') || '',
+  ];
+
+  return keyParts.join('::');
+}
+
+function restoreBookstoreVendorGridCache(cacheKey) {
+  const grid = getCollectionSearchGrid();
+  if (!grid || !cacheKey) return null;
+
+  try {
+    const cached = JSON.parse(window.sessionStorage.getItem(cacheKey) || 'null');
+    if (!cached || Date.now() - Number(cached.savedAt || 0) > 30 * 60 * 1000 || !cached.html) return null;
+
+    grid.innerHTML = cached.html;
+    return Number(cached.count || 0);
+  } catch (error) {
+    return null;
+  }
+}
+
+function storeBookstoreVendorGridCache(cacheKey) {
+  const grid = getCollectionSearchGrid();
+  if (!grid || !cacheKey) return;
+
+  const visibleItems = getCollectionSearchItems().filter((item) => !item.hidden && item.style.display !== 'none');
+  if (!visibleItems.length) return;
+
+  try {
+    const html = visibleItems.map((item) => {
+      const clone = item.cloneNode(true);
+      clone.hidden = false;
+      clone.style.display = '';
+      return clone.outerHTML;
+    }).join('');
+
+    window.sessionStorage.setItem(cacheKey, JSON.stringify({
+      savedAt: Date.now(),
+      count: visibleItems.length,
+      html,
+    }));
+  } catch (error) {
+    // If storage is full/blocked, keep normal loading behavior.
+  }
+}
+
 function filterExistingCollectionItemsByVendor(vendor) {
   const items = getCollectionSearchItems();
   const grid = getCollectionSearchGrid();
@@ -653,9 +709,18 @@ async function loadAllCollectionPagesForVendorFilter() {
 async function applyCollectionVendorFilterFromURL(loadAllPages = false) {
   const vendor = getCollectionVendorFilter();
   const selectedVendors = getCollectionVendorFilters();
+  const vendorCacheKey = loadAllPages ? getBookstoreVendorGridCacheKey() : '';
 
   if (selectedVendors.length && loadAllPages) {
     setBookstoreFilterLoadingState(true);
+
+    const cachedCount = restoreBookstoreVendorGridCache(vendorCacheKey);
+    if (cachedCount !== null) {
+      const visibleCount = filterExistingCollectionItemsByVendor(vendor);
+      setCollectionVisibleCount(visibleCount || cachedCount);
+      setBookstoreFilterLoadingState(false);
+      return visibleCount || cachedCount;
+    }
   }
 
   document.querySelectorAll('.bookstore-category-publishers a[href*="filter.p.vendor"]').forEach((link) => {
@@ -672,6 +737,7 @@ async function applyCollectionVendorFilterFromURL(loadAllPages = false) {
   if (selectedVendors.length && loadAllPages) {
     await loadAllCollectionPagesForVendorFilter();
     visibleCount = filterExistingCollectionItemsByVendor(vendor);
+    storeBookstoreVendorGridCache(vendorCacheKey);
   }
 
   setBookstoreFilterLoadingState(false);
