@@ -76,6 +76,8 @@
               class="product-grid__item product-grid__item--{{ forloop.index0 }}"
               data-page="{{ paginate.current_page }}"
               data-product-id="{{ product.id }}"
+              data-bookstore-product-price-min="{{ product.price_min }}"
+              data-bookstore-product-price-max="{{ product.price_max }}"
               ref="cards[]"
             >
               {% content_for 'block',
@@ -112,6 +114,8 @@
                 class="product-grid__item product-grid__item--{{ forloop.index0 }}"
                 data-page="{{ paginate.current_page }}"
                 data-product-id="{{ product.id }}"
+                data-bookstore-product-price-min="{{ product.price_min }}"
+                data-bookstore-product-price-max="{{ product.price_max }}"
                 ref="cards[]"
               >
                 {% content_for 'block',
@@ -133,6 +137,8 @@
             class="product-grid__item product-grid__item--{{ forloop.index0 }}"
             data-page="{{ paginate.current_page }}"
             data-product-id="{{ product.id }}"
+            data-bookstore-product-price-min="{{ product.price_min }}"
+            data-bookstore-product-price-max="{{ product.price_max }}"
             ref="cards[]"
           >
             {% content_for 'block',

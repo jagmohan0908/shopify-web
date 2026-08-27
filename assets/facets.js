@@ -16,6 +16,7 @@ const BOOKSTORE_PERSISTENT_QUERY_PARAMS = new Set([
   'view',
   'author',
   'collection_search',
+  'bookstore_category',
   'sort_by',
   'country',
   'options[prefix]',
@@ -110,8 +111,22 @@ class FacetsFormComponent extends Component {
     let newParameters = new URLSearchParams(/** @type any */ (formData));
     const currentParameters = new URLSearchParams(window.location.search);
 
-    if (newParameters.get('filter.v.price.gte') === '') newParameters.delete('filter.v.price.gte');
-    if (newParameters.get('filter.v.price.lte') === '') newParameters.delete('filter.v.price.lte');
+    ['filter.v.price.gte', 'filter.v.price.lte'].forEach((paramName) => {
+      const priceValue = newParameters.get(paramName);
+      if (priceValue === '') {
+        newParameters.delete(paramName);
+        return;
+      }
+
+      if (priceValue) {
+        const cleanPriceValue = priceValue.replace(/,/g, '').replace(/[^\d.]/g, '');
+        if (cleanPriceValue) {
+          newParameters.set(paramName, cleanPriceValue);
+        } else {
+          newParameters.delete(paramName);
+        }
+      }
+    });
 
     newParameters.delete('page');
     newParameters.delete('section_id');

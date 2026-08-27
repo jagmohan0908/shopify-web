@@ -147,6 +147,8 @@
               class="product-grid__item product-grid__item--{{ forloop.index0 }}"
               data-page="{{ paginate.current_page }}"
               data-product-id="{{ product.id }}"
+              data-bookstore-product-price-min="{{ product.price_min }}"
+              data-bookstore-product-price-max="{{ product.price_max }}"
               data-bookstore-product-vendor="{{ product.vendor | escape }}"
               data-bookstore-product-author="{{ searchable_author | escape }}"
               data-bookstore-product-format="{{ searchable_format | escape }}"

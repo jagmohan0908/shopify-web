@@ -413,6 +413,44 @@ function productItemMatchesSearch(item, query) {
   });
 }
 
+function getBookstoreActivePriceValue(paramName, url = new URL(window.location.href)) {
+  const rawValue = url.searchParams.get(paramName);
+  if (!rawValue) return null;
+
+  const parsedValue = Number(String(rawValue).replace(/,/g, '').replace(/[^\d.-]/g, ''));
+  return Number.isFinite(parsedValue) ? parsedValue : null;
+}
+
+function getBookstoreProductPriceRange(item) {
+  const minPrice = Number(item.getAttribute('data-bookstore-product-price-min'));
+  const maxPrice = Number(item.getAttribute('data-bookstore-product-price-max'));
+
+  if (!Number.isFinite(minPrice) && !Number.isFinite(maxPrice)) return null;
+
+  const safeMin = Number.isFinite(minPrice) ? minPrice : maxPrice;
+  const safeMax = Number.isFinite(maxPrice) ? maxPrice : minPrice;
+
+  return {
+    min: safeMin / 100,
+    max: safeMax / 100,
+  };
+}
+
+function productItemMatchesActivePrice(item, url = new URL(window.location.href)) {
+  const minFilter = getBookstoreActivePriceValue('filter.v.price.gte', url);
+  const maxFilter = getBookstoreActivePriceValue('filter.v.price.lte', url);
+
+  if (minFilter === null && maxFilter === null) return true;
+
+  const range = getBookstoreProductPriceRange(item);
+  if (!range) return true;
+
+  if (minFilter !== null && range.max < minFilter) return false;
+  if (maxFilter !== null && range.min > maxFilter) return false;
+
+  return true;
+}
+
 function getBookstoreCollectionHandleFromPath(pathname) {
   const pathParts = String(pathname || '').split('/').filter(Boolean);
   if (pathParts[0] !== 'collections') return '';
@@ -562,7 +600,7 @@ function filterExistingCollectionItemsByVendor(vendor) {
   let visibleCount = 0;
 
   items.forEach((item) => {
-    const isMatch = productItemMatchesSelectedVendors(item) && productItemMatchesActiveCategories(item);
+    const isMatch = productItemMatchesSelectedVendors(item) && productItemMatchesActiveCategories(item) && productItemMatchesActivePrice(item);
 
     item.hidden = !isMatch;
     item.style.display = isMatch ? '' : 'none';
@@ -616,7 +654,7 @@ async function loadAllCollectionPagesForVendorFilter() {
       const html = await response.text();
       const doc = new DOMParser().parseFromString(html, 'text/html');
       const nextItems = Array.from(doc.querySelectorAll('.product-grid__item[data-product-id]'));
-      const matchingItems = nextItems.filter((item) => productItemMatchesSelectedVendors(item) && productItemMatchesActiveCategories(item));
+      const matchingItems = nextItems.filter((item) => productItemMatchesSelectedVendors(item) && productItemMatchesActiveCategories(item) && productItemMatchesActivePrice(item));
       const pages = Number(doc.querySelector('.product-grid[data-last-page]')?.getAttribute('data-last-page') || 1);
 
       return { page, pages, items: matchingItems };
@@ -745,7 +783,7 @@ async function loadAllCollectionPagesForExtraCategoryFilters() {
       const html = await response.text();
       const doc = new DOMParser().parseFromString(html, 'text/html');
       const nextItems = Array.from(doc.querySelectorAll('.product-grid__item[data-product-id]'));
-      const matchingItems = nextItems.filter((item) => productItemMatchesSelectedVendors(item) && productItemMatchesActiveCategories(item));
+      const matchingItems = nextItems.filter((item) => productItemMatchesSelectedVendors(item) && productItemMatchesActiveCategories(item) && productItemMatchesActivePrice(item));
       const pages = Number(doc.querySelector('.product-grid[data-last-page]')?.getAttribute('data-last-page') || 1);
 
       return { handle, page, pages, items: matchingItems };
@@ -898,7 +936,7 @@ async function loadAllCollectionPagesForSearch(query) {
         if (!productId || existingIds.has(productId)) return;
         existingIds.add(productId);
 
-        if (productItemMatchesSearch(item, query) && productItemMatchesSelectedVendors(item) && productItemMatchesActiveCategories(item)) {
+        if (productItemMatchesSearch(item, query) && productItemMatchesSelectedVendors(item) && productItemMatchesActiveCategories(item) && productItemMatchesActivePrice(item)) {
           item.hidden = false;
           item.style.display = '';
           grid.appendChild(item);
@@ -1445,7 +1483,7 @@ async function loadGlobalCollectionSearch(query) {
     const html = await response.text();
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const searchItems = Array.from(doc.querySelectorAll('main[data-template^="search"] .product-grid__item[data-product-id], .product-grid__item[data-product-id]'))
-      .filter((item) => productItemMatchesSearch(item, query) && productItemMatchesSelectedVendors(item) && productItemMatchesActiveCategories(item));
+      .filter((item) => productItemMatchesSearch(item, query) && productItemMatchesSelectedVendors(item) && productItemMatchesActiveCategories(item) && productItemMatchesActivePrice(item));
     const resultCount = searchItems.length;
 
     grid.innerHTML = '';
@@ -1512,7 +1550,7 @@ async function applyCollectionPageSearch(query, updateUrl = true, loadAllPages =
   }
 
   items.forEach((item) => {
-    const isMatch = productItemMatchesSearch(item, query) && productItemMatchesSelectedVendors(item) && productItemMatchesActiveCategories(item);
+    const isMatch = productItemMatchesSearch(item, query) && productItemMatchesSelectedVendors(item) && productItemMatchesActiveCategories(item) && productItemMatchesActivePrice(item);
 
     item.hidden = !isMatch;
     item.style.display = isMatch ? '' : 'none';
