@@ -1,0 +1,94 @@
+{% liquid
+  assign current_author = request.params['filter.p.m.custom.author']
+  assign current_vendor = request.params['filter.p.vendor']
+  assign current_language = request.params['filter.p.m.custom.language']
+  assign current_format = request.params['filter.p.m.custom.format']
+  assign current_availability = request.params['filter.v.availability']
+
+  assign language_values = ''
+  assign format_values = ''
+  for item in collections.all.products limit: 80
+    assign item_language = item.metafields.custom.language.value | default: item.metafields.custom.language
+    assign item_format = item.metafields.custom.format.value | default: item.metafields.custom.cover_type.value | default: item.metafields.custom.cover_type
+
+    if item_language != blank
+      assign token = '|' | append: item_language | append: '|'
+      unless language_values contains token
+        assign language_values = language_values | append: token
+      endunless
+    endif
+
+    if item_format != blank
+      assign token = '|' | append: item_format | append: '|'
+      unless format_values contains token
+        assign format_values = format_values | append: token
+      endunless
+    endif
+  endfor
+
+  assign language_list = language_values | split: '|'
+  assign format_list = format_values | split: '|'
+%}
+
+<form class="bookstore-fallback-filters" action="{{ routes.search_url }}" method="get">
+  <input type="hidden" name="type" value="product">
+  <input type="hidden" name="q" value="*">
+  {% if current_author != blank %}
+    <input type="hidden" name="filter.p.m.custom.author" value="{{ current_author | escape }}">
+  {% endif %}
+
+  <h4>Filters</h4>
+
+  <details open>
+    <summary>Availability</summary>
+    <label>
+      <input type="checkbox" name="filter.v.availability" value="1" {% if current_availability == '1' %}checked{% endif %} onchange="this.form.submit()">
+      In stock
+    </label>
+  </details>
+
+  <details open>
+    <summary>Publisher</summary>
+    {% for vendor in collections.all.all_vendors limit: 36 %}
+      <label>
+        <input type="checkbox" name="filter.p.vendor" value="{{ vendor | escape }}" {% if current_vendor == vendor %}checked{% endif %} onchange="this.form.submit()">
+        {{ vendor }}
+      </label>
+    {% endfor %}
+  </details>
+
+  {% if language_values != blank %}
+    <details open>
+      <summary>Language</summary>
+      {% for value in language_list %}
+        {% assign clean_value = value | strip %}
+        {% if clean_value != blank %}
+          <label>
+            <input type="checkbox" name="filter.p.m.custom.language" value="{{ clean_value | escape }}" {% if current_language == clean_value %}checked{% endif %} onchange="this.form.submit()">
+            {{ clean_value }}
+          </label>
+        {% endif %}
+      {% endfor %}
+    </details>
+  {% endif %}
+
+  {% if format_values != blank %}
+    <details open>
+      <summary>Format</summary>
+      {% for value in format_list %}
+        {% assign clean_value = value | strip %}
+        {% if clean_value != blank %}
+          <label>
+            <input type="checkbox" name="filter.p.m.custom.format" value="{{ clean_value | escape }}" {% if current_format == clean_value %}checked{% endif %} onchange="this.form.submit()">
+            {{ clean_value }}
+          </label>
+        {% endif %}
+      {% endfor %}
+    </details>
+  {% endif %}
+
+  <div class="bookstore-fallback-filters__actions">
+    <button type="submit">Apply filters</button>
+    <a href="{{ routes.search_url }}?type=product&amp;q=*">Clear all</a>
+  </div>
+</form>

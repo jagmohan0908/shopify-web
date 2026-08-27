@@ -1,0 +1,84 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "contact_hero": {
+      "type": "bookstore-contact-hero",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "background_color": "#f2f6ff",
+        "accent_color": "#b6191a",
+        "eyebrow": "Contact us",
+        "heading": "We would love to hear from you",
+        "intro": "For orders, publisher enquiries, bulk requirements, or general support, reach the Books Bunny team here.",
+        "max_width": 1240,
+        "side_padding": 24,
+        "padding_top": 60,
+        "padding_bottom": 28
+      }
+    },
+    "contact_info_form": {
+      "type": "bookstore-contact-info-form",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "background_color": "#f2f6ff",
+        "card_color": "#ffffff",
+        "accent_color": "#b6191a",
+        "max_width": 1240,
+        "side_padding": 24,
+        "padding_top": 8,
+        "padding_bottom": 24,
+        "address_label": "Address",
+        "address_heading": "",
+        "address": "2/41 Ansari Road,\nDaryaganj,\nDelhi - 110002",
+        "phone_label": "Phone Number",
+        "phone_heading": "",
+        "phone": "+91 8743060284",
+        "email_label": "Email",
+        "email_heading": "",
+        "email": "sales@unboundscript.com",
+        "response_email": "sales@unboundscript.com",
+        "manuscript_text": "",
+        "manuscript_link": "",
+        "form_kicker": "Send a message",
+        "form_heading": "Tell us what you need",
+        "name_label": "Name",
+        "email_field_label": "Email",
+        "phone_field_label": "Phone",
+        "message_label": "Message",
+        "button_label": "Submit",
+        "success_message": "Thanks for contacting us. We will get back to you soon."
+      }
+    },
+    "contact_map": {
+      "type": "bookstore-contact-map",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "background_color": "#f2f6ff",
+        "card_color": "#ffffff",
+        "accent_color": "#b6191a",
+        "max_width": 1240,
+        "side_padding": 24,
+        "padding_top": 0,
+        "padding_bottom": 72,
+        "map_height": 360,
+        "map_kicker": "Find us",
+        "map_heading": "Books Bunny office location",
+        "map_text": "Use the map for quick directions to our Daryaganj office.",
+        "map_embed_url": "https://www.google.com/maps?q=2%2F41%20Ansari%20Road%2C%20Daryaganj%2C%20Delhi%20110002&output=embed"
+      }
+    }
+  },
+  "order": [
+    "contact_hero",
+    "contact_info_form",
+    "contact_map"
+  ]
+}

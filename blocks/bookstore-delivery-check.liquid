@@ -1,0 +1,88 @@
+<div class="bs-delivery-check" data-bs-delivery-check>
+  <label for="DeliveryPincode-{{ block.id }}">{{ block.settings.heading }}</label>
+  <div>
+    <input id="DeliveryPincode-{{ block.id }}" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="{{ block.settings.placeholder | escape }}">
+    <button type="button">{{ block.settings.button_text }}</button>
+  </div>
+  <p hidden>{{ block.settings.success_message }}</p>
+</div>
+
+<script>
+  (() => {
+    const block = document.currentScript.previousElementSibling;
+    if (!block) return;
+    const input = block.querySelector('input');
+    const message = block.querySelector('p');
+    block.querySelector('button')?.addEventListener('click', () => {
+      const ok = /^\d{6}$/.test(input.value.trim());
+      message.hidden = false;
+      message.textContent = ok ? {{ block.settings.success_message | json }} : {{ block.settings.error_message | json }};
+      message.classList.toggle('is-error', !ok);
+    });
+  })();
+</script>
+
+{% stylesheet %}
+  .bs-delivery-check {
+    padding: 16px;
+    border-radius: 8px;
+    background: #f5f5f5;
+  }
+
+  .bs-delivery-check label {
+    display: block;
+    margin-bottom: 10px;
+    color: #000;
+    font-weight: 700;
+  }
+
+  .bs-delivery-check div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  .bs-delivery-check input {
+    min-height: 42px;
+    border: 1px solid #dfdfdf;
+    border-radius: 4px;
+    padding: 0 12px;
+  }
+
+  .bs-delivery-check button {
+    min-height: 42px;
+    border: 0;
+    border-radius: 4px;
+    padding: 0 16px;
+    background: #000;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .bs-delivery-check p {
+    margin: 10px 0 0;
+    color: #155724;
+    font-size: 0.85rem;
+  }
+
+  .bs-delivery-check p.is-error {
+    color: #721c24;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Delivery checker",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Check delivery availability" },
+    { "type": "text", "id": "placeholder", "label": "Placeholder", "default": "Enter pincode" },
+    { "type": "text", "id": "button_text", "label": "Button text", "default": "Check" },
+    { "type": "text", "id": "success_message", "label": "Success message", "default": "You can get your product within 4-7 days when you order today." },
+    { "type": "text", "id": "error_message", "label": "Error message", "default": "Please enter a valid 6-digit Indian pincode." }
+  ],
+  "presets": [
+    { "name": "Delivery checker" }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,101 @@
+{% liquid
+  assign featured_collection = section.settings.collection | default: collections.all
+%}
+
+<div
+  class="sb-home sb-theme--{{ section.settings.color_theme }}"
+  style="
+    --sb-section-bg: {{ section.settings.background_color }};
+    --sb-section-heading: {{ section.settings.heading_color }};
+    --sb-section-text: {{ section.settings.text_color }};
+    --sb-section-accent: {{ section.settings.accent_color }};
+    --sb-section-card-bg: {{ section.settings.card_background }};
+  "
+>
+  <section class="sb-section sb-carousel-section sb-container" id="{{ section.settings.section_anchor | default: 'trending-now' }}">
+    <div class="sb-section__head">
+      <div>
+        {% if section.settings.heading != blank %}<h2>{{ section.settings.heading }}</h2>{% endif %}
+        {% if section.settings.text != blank %}<p>{{ section.settings.text }}</p>{% endif %}
+      </div>
+      {% if section.settings.show_view_all and featured_collection.url != blank %}
+        <a class="sb-watch-link" href="{{ featured_collection.url }}">{{ section.settings.view_all_label }}</a>
+      {% endif %}
+    </div>
+
+    {% capture product_slides %}
+      {% for product in featured_collection.products limit: section.settings.product_limit offset: section.settings.product_offset %}
+        {% capture slide_content %}
+          {% render 'stitch-book-card', product: product, section_id: section.id %}
+        {% endcapture %}
+        {% render 'slideshow-slide',
+          index: forloop.index0,
+          children: slide_content,
+          class: 'sb-horizon-product-slide',
+          slide_id: product.id
+        %}
+      {% endfor %}
+    {% endcapture %}
+    {% assign product_slides_markup = product_slides | strip %}
+
+    {% if product_slides_markup != blank %}
+      {% render 'slideshow',
+        slides: product_slides,
+        slide_count: section.settings.product_limit,
+        class: 'sb-carousel sb-horizon-carousel',
+        show_arrows: section.settings.show_arrows,
+        infinite: section.settings.loop_slider,
+        auto_hide_controls: true,
+        icon_style: 'chevron',
+        icon_shape: 'square',
+        arrows_position: 'right',
+        attributes: 'data-bookstore-product-slider'
+      %}
+    {% else %}
+      <p class="sb-empty">Choose a collection to show books here.</p>
+    {% endif %}
+  </section>
+</div>
+
+{% render 'add-to-cart-button-styles' %}
+
+{% schema %}
+{
+  "name": "Trending books",
+  "tag": "section",
+  "class": "section-trending-books",
+  "settings": [
+    { "type": "text", "id": "section_anchor", "label": "Section anchor ID", "default": "trending-now" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Trending Now" },
+    { "type": "text", "id": "text", "label": "Text", "default": "Most talked about releases this week" },
+    { "type": "collection", "id": "collection", "label": "Collection" },
+    { "type": "range", "id": "product_limit", "label": "Number of products", "min": 4, "max": 16, "step": 1, "default": 10 },
+    { "type": "range", "id": "product_offset", "label": "Skip products", "min": 0, "max": 40, "step": 1, "default": 0 },
+    { "type": "checkbox", "id": "show_arrows", "label": "Show carousel arrows", "default": true },
+    { "type": "checkbox", "id": "loop_slider", "label": "Loop slider", "default": true },
+    { "type": "checkbox", "id": "show_view_all", "label": "Show view all link", "default": false },
+    { "type": "text", "id": "view_all_label", "label": "View all label", "default": "View all" },
+    {
+      "type": "select",
+      "id": "color_theme",
+      "label": "Color theme",
+      "options": [
+        { "value": "paper", "label": "Paper" },
+        { "value": "soft-blue", "label": "Soft blue" },
+        { "value": "crimson", "label": "Crimson" },
+        { "value": "navy", "label": "Navy" },
+        { "value": "custom", "label": "Custom" }
+      ],
+      "default": "custom"
+    },
+    { "type": "color", "id": "background_color", "label": "Custom background", "default": "#f8f9ff" },
+    { "type": "color", "id": "heading_color", "label": "Custom heading color", "default": "#0d1c2f" },
+    { "type": "color", "id": "text_color", "label": "Custom text color", "default": "#45464d" },
+    { "type": "color", "id": "accent_color", "label": "Custom accent color", "default": "#b6191a" },
+    { "type": "color", "id": "card_background", "label": "Custom card background", "default": "#ffffff" }
+  ],
+  "presets": [
+    { "name": "Trending books" }
+  ]
+}
+{% endschema %}

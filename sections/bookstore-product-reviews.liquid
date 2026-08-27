@@ -1,0 +1,91 @@
+<section class="sb-product-section sb-product-reviews sb-product-container">
+  <div class="sb-product-reviews__head">
+    <div>
+      <h2>{{ section.settings.heading }}</h2>
+      <p><span aria-hidden="true">★★★★★</span> {{ section.settings.summary_text }}</p>
+    </div>
+    {% if section.settings.button_label != blank %}
+      <a href="{{ section.settings.button_link | default: '#shopify-product-reviews' }}">{{ section.settings.button_label }}</a>
+    {% endif %}
+  </div>
+
+  <div class="sb-product-review-highlights">
+    {% for block in section.blocks %}
+      {% if block.type == 'highlight' %}
+        <span {{ block.shopify_attributes }}>
+          {% if block.settings.image != blank %}
+            {{ block.settings.image | image_url: width: 140 | image_tag: loading: 'lazy', alt: block.settings.label }}
+          {% else %}
+            <small aria-hidden="true">⌘</small>
+          {% endif %}
+        </span>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <div class="sb-product-review-grid">
+    {% for block in section.blocks %}
+      {% if block.type == 'review' %}
+        <article class="sb-product-review-card" {{ block.shopify_attributes }}>
+          <div>
+            <span aria-hidden="true">★★★★★</span>
+            {% if block.settings.verified %}<small>Verified purchase</small>{% endif %}
+          </div>
+          <strong>{{ block.settings.author }}</strong>
+          <h3>{{ block.settings.title }}</h3>
+          <p>{{ block.settings.text }}</p>
+          {% if block.settings.image != blank %}
+            {{ block.settings.image | image_url: width: 120 | image_tag: loading: 'lazy', alt: block.settings.title }}
+          {% endif %}
+        </article>
+      {% endif %}
+    {% endfor %}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Product reviews",
+  "enabled_on": { "templates": ["product"] },
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Customer Reviews" },
+    { "type": "text", "id": "summary_text", "label": "Summary text", "default": "Based on 128 reviews" },
+    { "type": "text", "id": "button_label", "label": "Button label", "default": "Write a review" },
+    { "type": "url", "id": "button_link", "label": "Button link" }
+  ],
+  "blocks": [
+    {
+      "type": "highlight",
+      "name": "Review highlight image",
+      "settings": [
+        { "type": "image_picker", "id": "image", "label": "Image" },
+        { "type": "text", "id": "label", "label": "Label", "default": "Review image" }
+      ]
+    },
+    {
+      "type": "review",
+      "name": "Review",
+      "settings": [
+        { "type": "text", "id": "author", "label": "Author", "default": "Eleanor V." },
+        { "type": "text", "id": "title", "label": "Title", "default": "A Masterpiece of Atmosphere" },
+        { "type": "textarea", "id": "text", "label": "Text", "default": "The physical quality of this edition is breathtaking. The linen texture and gold foil are even better in person." },
+        { "type": "checkbox", "id": "verified", "label": "Show verified purchase", "default": true },
+        { "type": "image_picker", "id": "image", "label": "Image" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product reviews",
+      "blocks": [
+        { "type": "highlight" },
+        { "type": "highlight" },
+        { "type": "review" },
+        { "type": "review", "settings": { "author": "Julian M.", "title": "Intricate and Thought-Provoking" } },
+        { "type": "review", "settings": { "author": "Sarah L.", "title": "Perfect Addition to My Collection" } },
+        { "type": "review", "settings": { "author": "Marcus T.", "title": "Stunning Design" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

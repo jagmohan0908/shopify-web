@@ -1,0 +1,229 @@
+{% liquid
+  assign current_variant = product.selected_or_first_available_variant
+  assign book_author = product.metafields.custom.author.value | default: product.metafields.custom.author_name_and_about.value | default: product.metafields.book.author.value | default: product.vendor
+  assign book_isbn = product.metafields.custom.isbn.value | default: product.metafields.custom.isbn_number.value | default: product.metafields.book.isbn.value | default: current_variant.sku
+  assign book_language = product.metafields.custom.language.value | default: product.metafields.book.language.value
+  assign book_genre = product.metafields.custom.genre.value | default: product.type
+  assign book_pages = product.metafields.custom.pages.value | default: product.metafields.custom.page_count.value | default: product.metafields.book.pages.value
+  assign publication_date = product.metafields.custom.publication_date.value | default: product.metafields.custom.publication_year.value | default: product.metafields.book.year.value
+  assign book_dimensions = product.metafields.custom.dimensions.value | default: product.metafields.book.dimensions.value
+  assign book_binding = product.metafields.custom.binding.value | default: product.metafields.custom.format.value | default: product.metafields.book.format.value
+  assign product_form_id = 'BookstoreProductForm-' | append: section.id
+  assign total_bundle_price = current_variant.price
+  assign has_bundle_products = false
+  for block in section.blocks
+    if block.type == 'bundle_product' and block.settings.product != blank
+      assign has_bundle_products = true
+    endif
+  endfor
+%}
+
+<div
+  class="sb-product-page"
+  style="
+    --sb-product-bg: {{ section.settings.background_color }};
+    --sb-product-card: {{ section.settings.card_background }};
+    --sb-product-ink: {{ section.settings.heading_color }};
+    --sb-product-text: {{ section.settings.text_color }};
+    --sb-product-accent: {{ section.settings.accent_color }};
+  "
+>
+  <section class="sb-product-main sb-product-container">
+    <nav class="sb-product-breadcrumb" aria-label="Breadcrumb">
+      <a href="{{ routes.root_url }}">Home</a>
+      {% if product.collections.first %}
+        <span>›</span>
+        <a href="{{ product.collections.first.url }}">{{ product.collections.first.title }}</a>
+      {% endif %}
+      <span>›</span>
+      <span>{{ product.title }}</span>
+    </nav>
+
+    <div class="sb-product-layout">
+      <div class="sb-product-gallery">
+        <div class="sb-product-media-main">
+          {% if product.featured_media %}
+            {{ product.featured_media.preview_image | image_url: width: 1000 | image_tag: loading: 'eager', widths: '480, 720, 1000', sizes: '(max-width: 860px) 100vw, 42vw', alt: product.title }}
+          {% else %}
+            <span>{{ product.title | slice: 0 }}</span>
+          {% endif %}
+        </div>
+
+        {% if product.media.size > 1 %}
+          <div class="sb-product-thumbs">
+            {% for media in product.media limit: 4 %}
+              <a href="{{ media.preview_image | image_url: width: 1000 }}" aria-label="{{ product.title | escape }} image {{ forloop.index }}">
+                {{ media.preview_image | image_url: width: 180 | image_tag: loading: 'lazy', widths: '90, 140, 180', sizes: '76px', alt: product.title }}
+              </a>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% if has_bundle_products %}
+          <div class="sb-product-bundle">
+            <h3>{{ section.settings.bundle_heading }}</h3>
+            <div class="sb-product-bundle__items">
+              <div class="sb-product-bundle__item">
+                <div>
+                  {% if product.featured_image %}
+                    {{ product.featured_image | image_url: width: 120 | image_tag: loading: 'lazy', alt: product.title }}
+                  {% endif %}
+                </div>
+                <p><strong>{{ product.title }}</strong><span>{{ current_variant.price | money }}</span></p>
+              </div>
+              {% for block in section.blocks %}
+                {% if block.type == 'bundle_product' and block.settings.product != blank %}
+                  {% liquid
+                    assign bundle_product = block.settings.product
+                    assign bundle_variant = bundle_product.selected_or_first_available_variant
+                    assign total_bundle_price = total_bundle_price | plus: bundle_variant.price
+                  %}
+                  <span class="sb-product-bundle__plus">+</span>
+                  <div class="sb-product-bundle__item" {{ block.shopify_attributes }}>
+                    <div>
+                      {% if bundle_product.featured_image %}
+                        {{ bundle_product.featured_image | image_url: width: 120 | image_tag: loading: 'lazy', alt: bundle_product.title }}
+                      {% endif %}
+                    </div>
+                    <p><strong>{{ bundle_product.title }}</strong><span>{{ bundle_variant.price | money }}</span></p>
+                  </div>
+                {% endif %}
+              {% endfor %}
+            </div>
+            <div class="sb-product-bundle__total">
+              <span>Bundle Total:</span>
+              <strong>{{ total_bundle_price | money }}</strong>
+            </div>
+            <form action="{{ routes.cart_add_url }}" method="post" enctype="multipart/form-data">
+              <input type="hidden" name="items[0][id]" value="{{ current_variant.id }}">
+              <input type="hidden" name="items[0][quantity]" value="1">
+              {% assign bundle_index = 1 %}
+              {% for block in section.blocks %}
+                {% if block.type == 'bundle_product' and block.settings.product != blank %}
+                  <input type="hidden" name="items[{{ bundle_index }}][id]" value="{{ block.settings.product.selected_or_first_available_variant.id }}">
+                  <input type="hidden" name="items[{{ bundle_index }}][quantity]" value="1">
+                  {% assign bundle_index = bundle_index | plus: 1 %}
+                {% endif %}
+              {% endfor %}
+              <button type="submit">Add bundle to cart</button>
+            </form>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="sb-product-info">
+        {% if section.settings.kicker != blank %}<p class="sb-product-kicker">{{ section.settings.kicker }}</p>{% endif %}
+        <h1>{{ product.title }}</h1>
+        {% if book_author != blank %}<p class="sb-product-author">by {{ book_author }}</p>{% endif %}
+        <div class="sb-product-rating">
+          <span aria-hidden="true">★★★★★</span>
+          <small>{{ section.settings.review_text }}</small>
+        </div>
+        <div class="sb-product-price">{{ current_variant.price | money }}</div>
+
+        {% if section.settings.offer_text != blank %}
+          <div class="sb-product-note"><strong>{{ section.settings.offer_label }}</strong><span>{{ section.settings.offer_text }}</span></div>
+        {% endif %}
+        {% if section.settings.bundle_note != blank %}
+          <div class="sb-product-note sb-product-note--plain"><span>{{ section.settings.bundle_note }}</span></div>
+        {% endif %}
+
+        {% if product.description != blank %}
+          <div class="sb-product-description">{{ product.description }}</div>
+        {% endif %}
+
+        <product-form-component
+          data-section-id="{{ section.id }}"
+          data-product-id="{{ product.id }}"
+          data-product-url="{{ product.url }}"
+          on:submit="/handleSubmit"
+        >
+          <div class="visually-hidden" aria-live="assertive" role="status" aria-atomic="true" ref="liveRegion"></div>
+          {% form 'product', product, id: product_form_id, class: 'sb-product-form', data-type: 'add-to-cart-form' %}
+            {% if product.variants.size > 1 %}
+              <label class="sb-product-variant-label" for="BookstoreVariant-{{ section.id }}">Edition</label>
+              <select id="BookstoreVariant-{{ section.id }}" name="id" ref="variantId">
+                {% for variant in product.variants %}
+                  <option value="{{ variant.id }}" {% if variant == current_variant %}selected{% endif %} {% unless variant.available %}disabled{% endunless %}>
+                    {{ variant.title }} — {{ variant.price | money }}
+                  </option>
+                {% endfor %}
+              </select>
+            {% else %}
+              <input type="hidden" name="id" ref="variantId" value="{{ current_variant.id }}">
+            {% endif %}
+            <input type="hidden" name="quantity" value="1">
+            <div class="sb-product-actions">
+              {% render 'add-to-cart-button',
+                add_to_cart_text: section.settings.add_to_cart_label,
+                class: 'sb-product-add',
+                can_add_to_cart: product.available,
+                product: product
+              %}
+              <button class="sb-product-wishlist" type="button">{{ section.settings.wishlist_label }}</button>
+            </div>
+          {% endform %}
+        </product-form-component>
+
+        <div class="sb-product-dispatch">
+          <span aria-hidden="true">⌁</span>
+          <p><strong>{{ section.settings.dispatch_heading }}</strong><small>{{ section.settings.dispatch_text }}</small></p>
+        </div>
+
+        <div class="sb-product-specs">
+          <h2>{{ section.settings.specs_heading }}</h2>
+          <dl>
+            {% if book_isbn != blank %}<div><dt>ISBN-13</dt><dd>{{ book_isbn }}</dd></div>{% endif %}
+            {% if product.vendor != blank %}<div><dt>Publisher</dt><dd>{{ product.vendor }}</dd></div>{% endif %}
+            {% if publication_date != blank %}<div><dt>Publication Date</dt><dd>{{ publication_date }}</dd></div>{% endif %}
+            {% if book_pages != blank %}<div><dt>Pages</dt><dd>{{ book_pages }}</dd></div>{% endif %}
+            {% if book_language != blank %}<div><dt>Language</dt><dd>{{ book_language }}</dd></div>{% endif %}
+            {% if book_dimensions != blank %}<div><dt>Dimensions</dt><dd>{{ book_dimensions }}</dd></div>{% endif %}
+            {% if book_genre != blank %}<div><dt>Genre</dt><dd>{{ book_genre }}</dd></div>{% endif %}
+            {% if book_binding != blank %}<div><dt>Binding</dt><dd>{{ book_binding }}</dd></div>{% endif %}
+          </dl>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+{% render 'add-to-cart-button-styles' %}
+
+{% schema %}
+{
+  "name": "Bookstore product main",
+  "enabled_on": { "templates": ["product"] },
+  "settings": [
+    { "type": "text", "id": "kicker", "label": "Kicker", "default": "Collector's Edition" },
+    { "type": "text", "id": "review_text", "label": "Review text", "default": "(128 Reviews)" },
+    { "type": "text", "id": "offer_label", "label": "Offer label", "default": "Offer" },
+    { "type": "text", "id": "offer_text", "label": "Offer text", "default": "Special Launch Offer: Use code GRAND10 for an additional 10% off today." },
+    { "type": "text", "id": "bundle_note", "label": "Bundle note", "default": "Author Bundle: Save 15% when you purchase related books by this author." },
+    { "type": "text", "id": "add_to_cart_label", "label": "Add to cart label", "default": "Add to cart" },
+    { "type": "text", "id": "wishlist_label", "label": "Wishlist label", "default": "Add to wishlist" },
+    { "type": "text", "id": "dispatch_heading", "label": "Dispatch heading", "default": "Estimated Dispatch" },
+    { "type": "text", "id": "dispatch_text", "label": "Dispatch text", "default": "Standard 2-3 business days" },
+    { "type": "text", "id": "specs_heading", "label": "Specifications heading", "default": "Specifications" },
+    { "type": "text", "id": "bundle_heading", "label": "Bundle heading", "default": "Frequently Bought Together" },
+    { "type": "color", "id": "background_color", "label": "Background", "default": "#f8f9ff" },
+    { "type": "color", "id": "card_background", "label": "Card background", "default": "#ffffff" },
+    { "type": "color", "id": "heading_color", "label": "Heading color", "default": "#0d1c2f" },
+    { "type": "color", "id": "text_color", "label": "Text color", "default": "#45464d" },
+    { "type": "color", "id": "accent_color", "label": "Accent color", "default": "#b6191a" }
+  ],
+  "blocks": [
+    {
+      "type": "bundle_product",
+      "name": "Bundle product",
+      "settings": [
+        { "type": "product", "id": "product", "label": "Product" }
+      ]
+    }
+  ],
+  "max_blocks": 3,
+  "presets": [
+    { "name": "Bookstore product main" }
+  ]
+}
+{% endschema %}

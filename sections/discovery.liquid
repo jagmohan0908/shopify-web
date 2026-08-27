@@ -1,0 +1,301 @@
+{% liquid
+  assign fallback_collection = section.settings.collection | default: collections.all
+  assign products_per_tab = section.settings.products_per_tab
+%}
+
+<div
+  class="sb-home sb-discovery-section sb-theme--{{ section.settings.color_theme }}"
+  style="
+    --sb-section-bg: {{ section.settings.background_color }};
+    --sb-section-heading: {{ section.settings.title_color }};
+    --sb-section-text: {{ section.settings.text_color }};
+    --sb-section-accent: {{ section.settings.accent_color }};
+    --sb-section-card-bg: {{ section.settings.card_background }};
+    --sb-discovery-bg: {{ section.settings.background_color }};
+    --sb-discovery-border: {{ section.settings.border_color }};
+    --sb-discovery-title: {{ section.settings.title_color }};
+    --sb-discovery-text: {{ section.settings.text_color }};
+    --sb-discovery-accent: {{ section.settings.accent_color }};
+    --sb-discovery-card-bg: {{ section.settings.card_background }};
+    --sb-discovery-padding-top: {{ section.settings.padding_top }}px;
+    --sb-discovery-padding-bottom: {{ section.settings.padding_bottom }}px;
+  "
+>
+  <section class="sb-discovery sb-container sb-discovery--{{ section.settings.layout }}" id="{{ section.settings.section_anchor | default: 'genre-discovery' }}">
+    <div class="sb-discovery__nav">
+      {% if section.settings.kicker != blank %}
+        <p class="sb-discovery__kicker">{{ section.settings.kicker }}</p>
+      {% endif %}
+      {% if section.settings.heading != blank %}
+        <h2>{{ section.settings.heading }}</h2>
+      {% endif %}
+      {% if section.settings.text != blank %}
+        <p class="sb-discovery__text">{{ section.settings.text }}</p>
+      {% endif %}
+
+      <div class="sb-genre-tabs" role="tablist" aria-label="{{ section.settings.heading | escape }}">
+        {% for block in section.blocks %}
+          {% liquid
+            assign tab_label = block.settings.label
+            if tab_label == blank
+              assign tab_label = block.settings.collection.title | default: 'Genre'
+            endif
+          %}
+          <button
+            class="sb-genre-tab{% if forloop.first %} is-active{% endif %}"
+            type="button"
+            role="tab"
+            aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+            aria-controls="sb-genre-panel-{{ section.id }}-{{ block.id }}"
+            data-genre-target="sb-genre-panel-{{ section.id }}-{{ block.id }}"
+            {{ block.shopify_attributes }}
+          >
+            {{ tab_label }}
+          </button>
+        {% else %}
+          <button class="sb-genre-tab is-active" type="button" role="tab" aria-selected="true">
+            Add genre blocks
+          </button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="sb-discovery__panels">
+      {% for block in section.blocks %}
+        {% liquid
+          assign tab_collection = block.settings.collection | default: fallback_collection
+          assign tab_offset = block.settings.product_offset
+          assign tab_label = block.settings.label
+          if tab_label == blank
+            assign tab_label = tab_collection.title | default: 'Genre'
+          endif
+        %}
+        <div
+          class="sb-genre-panel{% if forloop.first %} is-active{% endif %}"
+          id="sb-genre-panel-{{ section.id }}-{{ block.id }}"
+          role="tabpanel"
+          aria-label="{{ tab_label | escape }}"
+          {% unless forloop.first %}hidden{% endunless %}
+        >
+          {% for product in tab_collection.products limit: products_per_tab offset: tab_offset %}
+            {% render 'stitch-book-card', product: product, section_id: section.id, compact: section.settings.compact_cards %}
+          {% else %}
+            <div class="sb-discovery__empty">
+              <strong>No books found</strong>
+              <span>Choose a collection for this discovery tab.</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="sb-genre-panel is-active" role="tabpanel">
+          {% for product in fallback_collection.products limit: products_per_tab %}
+            {% render 'stitch-book-card', product: product, section_id: section.id, compact: section.settings.compact_cards %}
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+<script>
+  (() => {
+    const section = document.currentScript.closest('.shopify-section');
+    if (!section) return;
+
+    section.querySelectorAll('.sb-genre-tab').forEach((button) => {
+      button.addEventListener('click', () => {
+        const target = button.dataset.genreTarget;
+        if (!target) return;
+
+        section.querySelectorAll('.sb-genre-tab').forEach((item) => {
+          const isActive = item === button;
+          item.classList.toggle('is-active', isActive);
+          item.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        });
+
+        section.querySelectorAll('.sb-genre-panel').forEach((panel) => {
+          const isActive = panel.id === target;
+          panel.classList.toggle('is-active', isActive);
+          panel.hidden = !isActive;
+        });
+      });
+    });
+  })();
+</script>
+
+{% render 'add-to-cart-button-styles' %}
+
+{% schema %}
+{
+  "name": "Discovery",
+  "tag": "section",
+  "class": "section-discovery",
+  "settings": [
+    {
+      "type": "text",
+      "id": "section_anchor",
+      "label": "Section anchor ID",
+      "default": "genre-discovery"
+    },
+    {
+      "type": "text",
+      "id": "kicker",
+      "label": "Kicker text",
+      "default": "Curated shelves"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Curated Discovery"
+    },
+    {
+      "type": "textarea",
+      "id": "text",
+      "label": "Description"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Fallback product collection"
+    },
+    {
+      "type": "range",
+      "id": "products_per_tab",
+      "label": "Products per tab",
+      "min": 2,
+      "max": 8,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "checkbox",
+      "id": "compact_cards",
+      "label": "Use compact product titles",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "Layout",
+      "options": [
+        { "value": "sidebar", "label": "Sidebar tabs" },
+        { "value": "top", "label": "Top tabs" }
+      ],
+      "default": "sidebar"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top spacing",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom spacing",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "select",
+      "id": "color_theme",
+      "label": "Color theme",
+      "options": [
+        { "value": "paper", "label": "Paper" },
+        { "value": "soft-blue", "label": "Soft blue" },
+        { "value": "crimson", "label": "Crimson" },
+        { "value": "navy", "label": "Navy" },
+        { "value": "custom", "label": "Custom" }
+      ],
+      "default": "custom"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Custom background",
+      "default": "#f8f9ff"
+    },
+    {
+      "type": "color",
+      "id": "border_color",
+      "label": "Custom divider color",
+      "default": "#c6c6cd"
+    },
+    {
+      "type": "color",
+      "id": "title_color",
+      "label": "Custom heading color",
+      "default": "#0d1c2f"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Custom text color",
+      "default": "#45464d"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Custom active tab color",
+      "default": "#b6191a"
+    },
+    {
+      "type": "color",
+      "id": "card_background",
+      "label": "Custom card background",
+      "default": "#ffffff"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "genre",
+      "name": "Genre tab",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Tab label",
+          "default": "Mystery"
+        },
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "Products collection"
+        },
+        {
+          "type": "range",
+          "id": "product_offset",
+          "label": "Skip products",
+          "min": 0,
+          "max": 24,
+          "step": 1,
+          "default": 0
+        }
+      ]
+    }
+  ],
+  "max_blocks": 12,
+  "presets": [
+    {
+      "name": "Discovery",
+      "blocks": [
+        { "type": "genre", "settings": { "label": "Mystery", "product_offset": 0 } },
+        { "type": "genre", "settings": { "label": "History", "product_offset": 4 } },
+        { "type": "genre", "settings": { "label": "Science", "product_offset": 8 } },
+        { "type": "genre", "settings": { "label": "Biography", "product_offset": 12 } },
+        { "type": "genre", "settings": { "label": "Art", "product_offset": 16 } },
+        { "type": "genre", "settings": { "label": "Poetry", "product_offset": 20 } },
+        { "type": "genre", "settings": { "label": "Fiction", "product_offset": 24 } }
+      ]
+    }
+  ]
+}
+{% endschema %}

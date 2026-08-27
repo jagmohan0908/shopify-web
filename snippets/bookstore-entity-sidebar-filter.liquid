@@ -1,0 +1,264 @@
+{%- liquid
+  assign filter_style = filter_style | default: 'vertical'
+  assign is_author_context = false
+  assign is_publisher_context = false
+  assign current_author = request.params.author | default: request.params['filter.p.m.custom.author'] | strip
+  assign current_publisher = blank
+  assign current_vendor_filter = request.params['filter.p.vendor'] | strip
+  assign section_id = section_id | default: section.id
+
+  if template.name == 'search' and template.suffix == 'author'
+    assign is_author_context = true
+  endif
+
+  if current_author == blank and filters != blank
+    for filter in filters
+      assign filter_label = filter.label | downcase
+      if filter.param_name contains 'author' or filter_label contains 'author'
+        if filter.active_values.size > 0
+          assign current_author = filter.active_values.first.value | default: filter.active_values.first.label | strip
+        endif
+        break
+      endif
+    endfor
+  endif
+
+  if template.name == 'collection'
+    assign collection_url_check = collection.url | default: ''
+    if collection.handle == 'vendors' or collection_url_check contains '/collections/vendors'
+      assign is_publisher_context = true
+      assign current_publisher = collection.current_vendor | default: request.params.q | default: collection.title | strip
+    endif
+  endif
+
+  assign current_author_key = current_author | handleize
+  assign current_publisher_key = current_publisher | handleize
+-%}
+
+{% if is_author_context %}
+  {%- liquid
+    assign author_filter = blank
+    assign publisher_filter = blank
+    assign publisher_filter_from_results = false
+    if filters != blank
+      for filter in filters
+        assign filter_label = filter.label | downcase
+        if filter.param_name contains 'author' or filter_label contains 'author'
+          assign author_filter = filter
+        elsif filter.param_name contains 'vendor'
+          assign publisher_filter = filter
+          assign publisher_filter_from_results = true
+        endif
+      endfor
+    endif
+
+    if author_filter == blank
+      for filter in collections.all.filters
+        assign filter_label = filter.label | downcase
+        if filter.param_name contains 'author' or filter_label contains 'author'
+          assign author_filter = filter
+          break
+        endif
+      endfor
+    endif
+
+    if publisher_filter == blank
+      for filter in collections.all.filters
+        if filter.param_name contains 'vendor'
+          assign publisher_filter = filter
+          break
+        endif
+      endfor
+    endif
+  -%}
+
+  <details
+    class="facets__panel bookstore-entity-facet bookstore-entity-facet--author-search"
+    {% if filter_style == 'horizontal' %}data-auto-close-details="desktop"{% endif %}
+    {% if filter_style == 'vertical' or in_drawer %}open{% endif %}
+  >
+    <summary class="facets__summary">
+      <span class="facets__label">Author</span>
+      <div class="facets__status-wrapper">
+        <span class="facets__status h6 desktop:hidden">Find author</span>
+        <span class="svg-wrapper icon-caret icon-animated">{{- 'icon-caret.svg' | inline_asset_content -}}</span>
+      </div>
+    </summary>
+
+    <div class="facets__inputs-wrapper bookstore-entity-facet__inputs">
+      <form class="bookstore-entity-author-search" action="{{ routes.search_url }}" method="get" role="search" data-author-sidebar-search>
+        <input type="hidden" name="view" value="author">
+        <input type="hidden" name="type" value="product">
+        <input type="hidden" name="q" value="*">
+        <input type="hidden" name="{% if author_filter != blank %}{{ author_filter.param_name }}{% else %}filter.p.m.custom.author{% endif %}" value="{{ current_author | escape }}" data-author-sidebar-filter-value>
+        <label class="visually-hidden" for="BookstoreAuthorSidebarSearch">Search author</label>
+        <input
+          id="BookstoreAuthorSidebarSearch"
+          type="search"
+          name="author"
+          placeholder="Search author"
+          value="{{ current_author | escape }}"
+          autocomplete="off"
+        >
+        <button type="submit">Search</button>
+      </form>
+      <ul class="facets__inputs-list bookstore-entity-facet__list list-unstyled" role="list">
+        {% assign rendered_entity_count = 0 %}
+
+        {% if author_filter != blank and author_filter.values.size > 0 %}
+          {% for author_value in author_filter.values limit: 60 %}
+            {% liquid
+              assign author_name = author_value.label | default: author_value.value | strip
+              assign author_key = author_name | handleize
+              assign encoded_author = author_value.value | default: author_name | url_encode
+            %}
+            {% if author_name != blank and author_key != current_author_key and author_value.count > 0 %}
+              {% assign rendered_entity_count = rendered_entity_count | plus: 1 %}
+              <li class="facets__inputs-list-item">
+                <a
+                  class="bookstore-entity-facet__link"
+                  href="{{ routes.search_url }}?view=author&amp;type=product&amp;q=*&amp;{{ author_filter.param_name }}={{ encoded_author }}&amp;author={{ encoded_author }}"
+                >
+                  <span class="bookstore-entity-facet__initial" aria-hidden="true">{{ author_name | slice: 0 | upcase }}</span>
+                  <span class="bookstore-entity-facet__text">
+                    <span>{{ author_name }}</span>
+                    <small>{{ author_value.count }} books</small>
+                  </span>
+                </a>
+              </li>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+      </ul>
+
+      {% if rendered_entity_count == 0 %}
+        <p class="bookstore-entity-facet__empty">Other authors will appear after Author metafields are indexed.</p>
+      {% endif %}
+    </div>
+  </details>
+
+  {% if publisher_filter != blank or collections.all.all_vendors.size > 0 %}
+    <details
+      class="facets__panel bookstore-collection-facet bookstore-entity-facet bookstore-entity-facet--publisher-fallback"
+      {% if filter_style == 'horizontal' %}data-auto-close-details="desktop"{% endif %}
+      {% if filter_style == 'vertical' or in_drawer %}open{% endif %}
+    >
+      <summary class="facets__summary">
+        <span class="facets__label">Publisher</span>
+        <div class="facets__status-wrapper">
+          <span class="facets__status h6 desktop:hidden">
+            {% if current_vendor_filter != blank %}{{ current_vendor_filter }}{% else %}Filter publisher{% endif %}
+          </span>
+          <span class="svg-wrapper icon-caret icon-animated">{{- 'icon-caret.svg' | inline_asset_content -}}</span>
+        </div>
+      </summary>
+
+      <div class="facets__inputs-wrapper bookstore-collection-facet__inputs">
+        <ul class="facets__inputs-list bookstore-collection-facet__list list-unstyled" role="list">
+          {% assign rendered_publisher_count = 0 %}
+          {% for publisher_value in publisher_filter.values limit: 80 %}
+            {% liquid
+              assign publisher_name = publisher_value.label | default: publisher_value.value | strip
+              assign publisher_value_raw = publisher_value.value | default: publisher_name
+              assign is_current_publisher = false
+              if current_vendor_filter == publisher_value_raw or current_vendor_filter == publisher_name
+                assign is_current_publisher = true
+              endif
+            %}
+            {% if publisher_name != blank and publisher_value.count > 0 %}
+              {% assign rendered_publisher_count = rendered_publisher_count | plus: 1 %}
+              <li class="facets__inputs-list-item">
+                <label class="bookstore-collection-facet__link{% if is_current_publisher %} is-active{% endif %}">
+                  <input
+                    type="checkbox"
+                    name="filter.p.vendor"
+                    value="{{ publisher_value_raw | escape }}"
+                    {% if is_current_publisher %}checked{% endif %}
+                    onchange="this.form?.requestSubmit ? this.form.requestSubmit() : this.form.submit()"
+                  >
+                  <span aria-hidden="true"></span>
+                  <span>{{ publisher_name }}</span>
+                </label>
+              </li>
+            {% endif %}
+          {% endfor %}
+
+          {% if rendered_publisher_count == 0 %}
+            {% for vendor in collections.all.all_vendors limit: 80 %}
+              {% liquid
+                assign publisher_name = vendor | strip
+                assign is_current_publisher = false
+                if current_vendor_filter == publisher_name
+                  assign is_current_publisher = true
+                endif
+              %}
+              {% if publisher_name != blank %}
+                {% assign rendered_publisher_count = rendered_publisher_count | plus: 1 %}
+                <li class="facets__inputs-list-item">
+                  <label class="bookstore-collection-facet__link{% if is_current_publisher %} is-active{% endif %}">
+                    <input
+                      type="checkbox"
+                      name="filter.p.vendor"
+                      value="{{ publisher_name | escape }}"
+                      {% if is_current_publisher %}checked{% endif %}
+                      onchange="this.form?.requestSubmit ? this.form.requestSubmit() : this.form.submit()"
+                    >
+                    <span aria-hidden="true"></span>
+                    <span>{{ publisher_name }}</span>
+                  </label>
+                </li>
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+        </ul>
+
+        {% if rendered_publisher_count == 0 %}
+          <p class="bookstore-entity-facet__empty">Publishers will appear after products are indexed.</p>
+        {% endif %}
+      </div>
+    </details>
+  {% endif %}
+{% elsif is_publisher_context %}
+  <details
+    class="facets__panel bookstore-collection-facet bookstore-entity-facet bookstore-entity-facet--publisher-list"
+    {% if filter_style == 'horizontal' %}data-auto-close-details="desktop"{% endif %}
+    {% if filter_style == 'vertical' or in_drawer %}open{% endif %}
+  >
+    <summary class="facets__summary">
+      <span class="facets__label">Publisher</span>
+      <div class="facets__status-wrapper">
+        <span class="facets__status h6 desktop:hidden">{{ current_publisher }}</span>
+        <span class="svg-wrapper icon-caret icon-animated">{{- 'icon-caret.svg' | inline_asset_content -}}</span>
+      </div>
+    </summary>
+
+    <div class="facets__inputs-wrapper bookstore-collection-facet__inputs">
+      <ul class="facets__inputs-list bookstore-collection-facet__list" role="list">
+        {% assign rendered_entity_count = 0 %}
+        {% for vendor in collections.all.all_vendors limit: 60 %}
+          {% liquid
+            assign vendor_name = vendor | strip
+            assign vendor_key = vendor_name | handleize
+          %}
+          {% if vendor_name != blank %}
+            {% assign rendered_entity_count = rendered_entity_count | plus: 1 %}
+            <li class="facets__inputs-list-item">
+              <a
+                class="bookstore-collection-facet__link{% if vendor_key == current_publisher_key %} is-active{% endif %}"
+                href="{{ routes.collections_url }}/vendors?q={{ vendor_name | url_encode }}"
+                {% if vendor_key == current_publisher_key %}aria-current="page"{% endif %}
+              >
+                <span aria-hidden="true"></span>
+                <span>{{ vendor_name }}</span>
+              </a>
+            </li>
+          {% endif %}
+        {% endfor %}
+      </ul>
+
+      {% if rendered_entity_count == 0 %}
+        <p class="bookstore-entity-facet__empty">Other publishers will appear when more vendors are indexed.</p>
+      {% endif %}
+    </div>
+  </details>
+{% endif %}

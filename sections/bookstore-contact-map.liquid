@@ -1,0 +1,129 @@
+{% liquid
+  assign map_embed_url = section.settings.map_embed_url
+  if map_embed_url == blank
+    assign map_embed_url = 'https://www.google.com/maps?q=2%2F41%20Ansari%20Road%2C%20Daryaganj%2C%20Delhi%20110002&output=embed'
+  endif
+%}
+
+<section class="bb-contact-map-section color-{{ section.settings.color_scheme }}" style="--bb-accent: {{ section.settings.accent_color }}; --bb-card: {{ section.settings.card_color }}; --bb-bg: {{ section.settings.background_color }}; --bb-max: {{ section.settings.max_width }}px; --bb-side: {{ section.settings.side_padding }}px; --bb-top: {{ section.settings.padding_top }}px; --bb-bottom: {{ section.settings.padding_bottom }}px; --bb-map-height: {{ section.settings.map_height }}px;">
+  <div class="bb-contact-section-inner">
+    <div class="bb-contact-map-wrapper">
+      <div class="bb-contact-map-copy">
+        <p class="bb-contact-kicker">{{ section.settings.map_kicker }}</p>
+        <h2>{{ section.settings.map_heading }}</h2>
+        {% if section.settings.map_text != blank %}
+          <p>{{ section.settings.map_text }}</p>
+        {% endif %}
+      </div>
+      <div class="bb-contact-map-frame">
+        <iframe
+          src="{{ map_embed_url | escape }}"
+          title="{{ section.settings.map_heading | escape }}"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          allowfullscreen>
+        </iframe>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% stylesheet %}
+  .bb-contact-map-section {
+    background: var(--bb-bg);
+    padding: var(--bb-top) 0 var(--bb-bottom);
+  }
+
+  .bb-contact-section-inner {
+    margin: 0 auto;
+    max-width: var(--bb-max);
+    padding-left: var(--bb-side);
+    padding-right: var(--bb-side);
+    width: 100%;
+  }
+
+  .bb-contact-kicker {
+    color: var(--bb-accent);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: .14em;
+    line-height: 1.2;
+    margin: 0 0 10px;
+    text-transform: uppercase;
+  }
+
+  .bb-contact-map-wrapper {
+    background: var(--bb-card);
+    border: 1px solid rgba(16, 33, 58, .11);
+    border-radius: 0;
+    box-shadow: 0 18px 42px rgba(16, 33, 58, .08);
+    display: grid;
+    grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
+    overflow: hidden;
+  }
+
+  .bb-contact-map-copy {
+    align-self: center;
+    padding: clamp(22px, 3.2vw, 38px);
+  }
+
+  .bb-contact-map-copy h2 {
+    color: #10213a;
+    font-family: var(--font-heading--family, serif);
+    font-size: clamp(22px, 2.5vw, 32px);
+    line-height: 1.08;
+    margin: 0 0 16px;
+  }
+
+  .bb-contact-map-copy p:not(.bb-contact-kicker) {
+    color: rgba(16, 33, 58, .76);
+    font-size: 15px;
+    line-height: 1.7;
+    margin: 0;
+  }
+
+  .bb-contact-map-frame {
+    min-height: var(--bb-map-height);
+  }
+
+  .bb-contact-map-frame iframe {
+    border: 0;
+    display: block;
+    height: 100%;
+    min-height: var(--bb-map-height);
+    width: 100%;
+  }
+
+  @media (max-width: 749px) {
+    .bb-contact-section-inner {
+      padding-left: min(var(--bb-side), 20px);
+      padding-right: min(var(--bb-side), 20px);
+    }
+
+    .bb-contact-map-wrapper {
+      grid-template-columns: 1fr;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Contact map",
+  "settings": [
+    { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-1" },
+    { "type": "color", "id": "background_color", "label": "Background color", "default": "#f2f6ff" },
+    { "type": "color", "id": "card_color", "label": "Card background", "default": "#ffffff" },
+    { "type": "color", "id": "accent_color", "label": "Accent color", "default": "#b6191a" },
+    { "type": "range", "id": "max_width", "label": "Content max width", "min": 900, "max": 1600, "step": 20, "unit": "px", "default": 1240 },
+    { "type": "range", "id": "side_padding", "label": "Left/right padding", "min": 0, "max": 80, "step": 2, "unit": "px", "default": 24 },
+    { "type": "range", "id": "padding_top", "label": "Top padding", "min": 0, "max": 140, "step": 4, "unit": "px", "default": 0 },
+    { "type": "range", "id": "padding_bottom", "label": "Bottom padding", "min": 0, "max": 140, "step": 4, "unit": "px", "default": 72 },
+    { "type": "range", "id": "map_height", "label": "Map height", "min": 260, "max": 620, "step": 20, "unit": "px", "default": 360 },
+    { "type": "text", "id": "map_kicker", "label": "Map kicker", "default": "Find us" },
+    { "type": "text", "id": "map_heading", "label": "Map heading", "default": "Books Bunny office location" },
+    { "type": "textarea", "id": "map_text", "label": "Map text", "default": "Use the map for quick directions to our Daryaganj office." },
+    { "type": "text", "id": "map_embed_url", "label": "Google map embed URL", "default": "https://www.google.com/maps?q=2%2F41%20Ansari%20Road%2C%20Daryaganj%2C%20Delhi%20110002&output=embed" }
+  ],
+  "presets": [{ "name": "Contact map" }]
+}
+{% endschema %}

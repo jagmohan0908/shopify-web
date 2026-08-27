@@ -1,0 +1,102 @@
+{% liquid
+  assign book_author = product.metafields.custom.author.value | default: product.metafields.custom.author_name_and_about.value | default: product.metafields.book.author.value
+  assign book_isbn = product.metafields.custom.isbn.value | default: product.metafields.custom.isbn_number.value | default: product.metafields.book.isbn.value | default: product.selected_or_first_available_variant.sku
+  assign book_edition = product.metafields.custom.edition.value | default: product.metafields.custom.bookedition.value | default: product.metafields.book.edition.value
+  assign book_language = product.metafields.custom.language.value | default: product.metafields.book.language.value
+  assign book_format = product.metafields.custom.format.value | default: product.metafields.book.format.value
+  assign book_pages = product.metafields.custom.pages.value | default: product.metafields.custom.page_count.value | default: product.metafields.book.pages.value
+  assign publication_year = product.metafields.custom.year.value | default: product.metafields.custom.publication_year.value | default: product.metafields.book.year.value
+%}
+
+<div class="bookstore-shell bookstore-product-extra">
+  <section class="bookstore-section bookstore-product-deep-dive">
+    <div class="bookstore-container bookstore-product-detail-grid">
+      <article class="bookstore-product-narrative">
+        <div class="bookstore-eyebrow">Book details</div>
+        <h2>{{ product.title }}</h2>
+        <div class="bookstore-product-badges" aria-label="Book highlights">
+          <span>{% if product.available %}In stock{% else %}Out of stock{% endif %}</span>
+          {% if product.vendor != blank %}<span>{{ product.vendor }}</span>{% endif %}
+          {% if book_language != blank %}<span>{{ book_language }}</span>{% endif %}
+          {% if book_format != blank %}<span>{{ book_format }}</span>{% endif %}
+        </div>
+        {% if product.description != blank %}
+          <div class="bookstore-copy bookstore-product-description">{{ product.description }}</div>
+        {% else %}
+          <p class="bookstore-copy bookstore-product-description">A carefully selected title from our multipublisher bookstore catalog.</p>
+        {% endif %}
+      </article>
+      <dl class="bookstore-card bookstore-feature-panel bookstore-spec-table">
+        <div class="bookstore-spec bookstore-spec--featured"><dt>Price</dt><dd>{{ product.selected_or_first_available_variant.price | money }}</dd></div>
+        <div class="bookstore-spec"><dt>Publisher</dt><dd>{{ product.vendor | default: 'Not specified' }}</dd></div>
+        {% if book_author != blank %}<div class="bookstore-spec"><dt>Author</dt><dd>{{ book_author }}</dd></div>{% endif %}
+        {% if book_isbn != blank %}<div class="bookstore-spec"><dt>ISBN</dt><dd>{{ book_isbn }}</dd></div>{% endif %}
+        {% if book_edition != blank %}<div class="bookstore-spec"><dt>Edition</dt><dd>{{ book_edition }}</dd></div>{% endif %}
+        {% if book_language != blank %}<div class="bookstore-spec"><dt>Language</dt><dd>{{ book_language }}</dd></div>{% endif %}
+        {% if book_format != blank %}<div class="bookstore-spec"><dt>Format</dt><dd>{{ book_format }}</dd></div>{% endif %}
+        {% if book_pages != blank %}<div class="bookstore-spec"><dt>Pages</dt><dd>{{ book_pages }}</dd></div>{% endif %}
+        {% if publication_year != blank %}<div class="bookstore-spec"><dt>Published</dt><dd>{{ publication_year }}</dd></div>{% endif %}
+        <div class="bookstore-spec"><dt>Availability</dt><dd>{% if product.available %}In stock{% else %}Out of stock{% endif %}</dd></div>
+      </dl>
+    </div>
+
+    <product-form-component
+      class="bookstore-sticky-buy"
+      data-section-id="{{ section.id }}"
+      data-product-id="{{ product.id }}"
+      data-product-url="{{ product.url }}"
+      on:submit="/handleSubmit"
+    >
+      <div>
+        <span class="bookstore-sticky-buy__label">Ready to order</span>
+        <strong>{{ product.title }}</strong>
+        <div class="bookstore-book-card__price">{{ product.selected_or_first_available_variant.price | money }}</div>
+      </div>
+      <div class="visually-hidden" aria-live="assertive" role="status" aria-atomic="true" ref="liveRegion"></div>
+      {% form 'product', product, id: 'BookstoreStickyProductForm', class: 'bookstore-product-actions', data-type: 'add-to-cart-form' %}
+        <input type="hidden" name="id" ref="variantId" value="{{ product.selected_or_first_available_variant.id }}">
+        {% render 'add-to-cart-button',
+          add_to_cart_text: 'Add to Cart',
+          class: 'bookstore-sticky-add',
+          can_add_to_cart: product.available,
+          product: product
+        %}
+        {{ form | payment_button }}
+      {% endform %}
+    </product-form-component>
+  </section>
+
+  <section class="bookstore-section bookstore-section--soft">
+    <div class="bookstore-container bookstore-product-support-grid">
+      <div class="bookstore-card bookstore-feature-panel bookstore-faq">
+        <div class="bookstore-eyebrow">FAQ</div>
+        <h2>Before you buy</h2>
+        <details open><summary>Is this book available now?</summary><p>{% if product.available %}Yes, this title is currently available for purchase.{% else %}This title is currently unavailable. Please contact us for restock information.{% endif %}</p></details>
+        <details><summary>Is the edition information shown clearly?</summary><p>Edition, language, publisher, ISBN, and availability appear in the specifications when available.</p></details>
+        <details><summary>Can I buy this with related titles?</summary><p>Yes. Browse the related collections below to add similar or companion books to your order.</p></details>
+      </div>
+      <div class="bookstore-card bookstore-feature-panel">
+        <div class="bookstore-eyebrow">Frequently bought together</div>
+        <h2>Pair this book with related titles.</h2>
+        <p class="bookstore-copy">Continue browsing similar categories, editions, and companion reading from the same catalog.</p>
+        <div class="bookstore-chip-list">
+          {% for collection in product.collections limit: 4 %}
+            <a class="bookstore-chip" href="{{ collection.url }}">{{ collection.title }}</a>
+          {% else %}
+            <a class="bookstore-chip" href="{{ routes.collections_url }}/all">Browse all books</a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+{% schema %}
+{
+  "name": "Bookstore product details",
+  "enabled_on": { "templates": ["product"] },
+  "presets": [
+    { "name": "Bookstore product details" }
+  ]
+}
+{% endschema %}

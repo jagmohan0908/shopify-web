@@ -1,0 +1,122 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "about_hero": {
+      "type": "bookstore-about-hero",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "background_color": "#f2f6ff",
+        "accent_color": "#b6191a",
+        "eyebrow": "About us",
+        "heading": "A modern marketplace for books from trusted publishers",
+        "intro": "",
+        "max_width": 1200,
+        "side_padding": 30,
+        "padding_top": 60,
+        "padding_bottom": 36
+      }
+    },
+    "about_story": {
+      "type": "bookstore-about-story",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "background_color": "#f2f6ff",
+        "card_color": "#ffffff",
+        "accent_color": "#b6191a",
+        "eyebrow": "Our story",
+        "heading": "Books from many publishers, gathered in one simple place",
+        "text": "<p>Books Bunny is an online bookstore built for readers who want it all in one place — fiction, non-fiction, children's books, poetry, educational titles, and more, sourced from publishers across India and beyond.</p><p>We believe finding the right book shouldn't mean hopping between ten different websites. Books Bunny brings together titles from a wide range of publishing houses onto a single, easy-to-browse platform.</p><p>Every title on Books Bunny is 100% original and sourced directly through authorised channels.</p>",
+        "note_heading": "Original books only",
+        "note_text": "Every title is sourced with care, and every order is handled with the same attention we'd want as readers ourselves.",
+        "max_width": 1240,
+        "side_padding": 24,
+        "padding_top": 0,
+        "padding_bottom": 40
+      }
+    },
+    "about_promises": {
+      "type": "bookstore-about-promises",
+      "blocks": {
+        "promise_catalogue": {
+          "type": "promise",
+          "settings": {
+            "heading": "Curated catalogue",
+            "text": "A wide-ranging collection spanning multiple publishers, genres, and reader needs."
+          }
+        },
+        "promise_original": {
+          "type": "promise",
+          "settings": {
+            "heading": "Original books",
+            "text": "Titles sourced through authorised channels, never pirated or counterfeit copies."
+          }
+        },
+        "promise_bulk": {
+          "type": "promise",
+          "settings": {
+            "heading": "Bulk support",
+            "text": "Support for schools, libraries, colleges, institutions, and large reader communities."
+          }
+        },
+        "promise_checkout": {
+          "type": "promise",
+          "settings": {
+            "heading": "Secure ordering",
+            "text": "A simple shopping flow with secure checkout and reliable delivery support."
+          }
+        }
+      },
+      "block_order": [
+        "promise_catalogue",
+        "promise_original",
+        "promise_bulk",
+        "promise_checkout"
+      ],
+      "settings": {
+        "color_scheme": "scheme-1",
+        "background_color": "#f2f6ff",
+        "card_color": "#ffffff",
+        "accent_color": "#b6191a",
+        "eyebrow": "What we offer",
+        "heading": "A bookstore experience built around trust and discovery",
+        "max_width": 1240,
+        "side_padding": 24,
+        "padding_top": 0,
+        "padding_bottom": 44
+      }
+    },
+    "about_cta": {
+      "type": "bookstore-about-cta",
+      "settings": {
+        "color_scheme": "scheme-1",
+        "background_color": "#f2f6ff",
+        "accent_color": "#b6191a",
+        "eyebrow": "Need help?",
+        "heading": "Talk to Books Bunny",
+        "text": "For publisher onboarding, bulk orders, institutional requirements, or customer support, contact our team.",
+        "button_label": "Contact us",
+        "button_link": "/pages/contact",
+        "secondary_label": "Email sales",
+        "secondary_link": "mailto:sales@unboundscript.com",
+        "max_width": 1240,
+        "side_padding": 24,
+        "padding_top": 0,
+        "padding_bottom": 72
+      }
+    }
+  },
+  "order": [
+    "about_hero",
+    "about_story",
+    "about_promises",
+    "about_cta"
+  ]
+}

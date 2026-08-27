@@ -1,0 +1,168 @@
+<section class="bb-about-story color-{{ section.settings.color_scheme }}" style="--bb-about-bg: {{ section.settings.background_color }}; --bb-about-card: {{ section.settings.card_color }}; --bb-about-accent: {{ section.settings.accent_color }}; --bb-about-max: {{ section.settings.max_width }}px; --bb-about-side: {{ section.settings.side_padding }}px; --bb-about-top: {{ section.settings.padding_top }}px; --bb-about-bottom: {{ section.settings.padding_bottom }}px;">
+  <div class="bb-about-inner">
+    <div class="bb-about-story__grid">
+      <div class="bb-about-story__copy">
+        <p class="bb-about-kicker">{{ section.settings.eyebrow }}</p>
+        <h2>{{ section.settings.heading }}</h2>
+        <div class="bb-about-rte">{{ section.settings.text }}</div>
+      </div>
+      <div class="bb-about-story__panel">
+        {% if section.settings.image != blank %}
+          {{ section.settings.image | image_url: width: 900 | image_tag: loading: 'lazy', sizes: '(max-width: 749px) 100vw, 42vw', widths: '360, 540, 720, 900', alt: section.settings.heading }}
+        {% else %}
+          <div class="bb-about-story__symbol">B</div>
+        {% endif %}
+        <div class="bb-about-story__note">
+          <strong>{{ section.settings.note_heading }}</strong>
+          <span>{{ section.settings.note_text }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% stylesheet %}
+  .bb-about-story {
+    background: var(--bb-about-bg);
+    padding: var(--bb-about-top) 0 var(--bb-about-bottom);
+  }
+
+  .bb-about-inner {
+    margin: 0 auto;
+    max-width: var(--bb-about-max);
+    padding-left: var(--bb-about-side);
+    padding-right: var(--bb-about-side);
+    width: 100%;
+  }
+
+  .bb-about-kicker {
+    color: var(--bb-about-accent);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: .14em;
+    margin: 0 0 10px;
+    text-transform: uppercase;
+  }
+
+  .bb-about-story__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 480px);
+    gap: clamp(22px, 4vw, 56px);
+    align-items: center;
+  }
+
+  .bb-about-story__copy {
+    background: var(--bb-about-card);
+    border: 1px solid rgba(16, 33, 58, .1);
+    box-shadow: 0 18px 42px rgba(16, 33, 58, .07);
+    padding: clamp(24px, 4vw, 48px);
+  }
+
+  .bb-about-story__copy h2 {
+    color: #10213a;
+    font-family: var(--font-heading--family, serif);
+    font-size: clamp(28px, 4vw, 48px);
+    line-height: 1.05;
+    margin: 0 0 18px;
+  }
+
+  .bb-about-rte {
+    color: rgba(16, 33, 58, .76);
+    font-size: 15px;
+    line-height: 1.78;
+  }
+
+  .bb-about-rte p {
+    margin: 0 0 14px;
+  }
+
+  .bb-about-rte p:last-child {
+    margin-bottom: 0;
+  }
+
+  .bb-about-story__panel {
+    background: #10213a;
+    color: #fff;
+    min-height: 420px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .bb-about-story__panel img {
+    display: block;
+    height: 100%;
+    min-height: 420px;
+    object-fit: cover;
+    opacity: .72;
+    width: 100%;
+  }
+
+  .bb-about-story__symbol {
+    align-items: center;
+    display: flex;
+    font-family: var(--font-heading--family, serif);
+    font-size: clamp(160px, 22vw, 280px);
+    height: 420px;
+    justify-content: center;
+    opacity: .16;
+  }
+
+  .bb-about-story__note {
+    bottom: 24px;
+    left: 24px;
+    max-width: calc(100% - 48px);
+    position: absolute;
+  }
+
+  .bb-about-story__note strong,
+  .bb-about-story__note span {
+    display: block;
+  }
+
+  .bb-about-story__note strong {
+    font-size: 22px;
+    margin-bottom: 8px;
+  }
+
+  .bb-about-story__note span {
+    color: rgba(255,255,255,.82);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 899px) {
+    .bb-about-story__grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 749px) {
+    .bb-about-inner {
+      padding-left: min(var(--bb-about-side), 20px);
+      padding-right: min(var(--bb-about-side), 20px);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "About story",
+  "settings": [
+    { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-1" },
+    { "type": "color", "id": "background_color", "label": "Background color", "default": "#f2f6ff" },
+    { "type": "color", "id": "card_color", "label": "Card background", "default": "#ffffff" },
+    { "type": "color", "id": "accent_color", "label": "Accent color", "default": "#b6191a" },
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Our story" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Books from many publishers, gathered in one simple place" },
+    { "type": "richtext", "id": "text", "label": "Text", "default": "<p>Books Bunny is an online bookstore built for readers who want it all in one place — fiction, non-fiction, children's books, poetry, educational titles, and more, sourced from publishers across India and beyond.</p><p>We believe finding the right book shouldn't mean hopping between ten different websites. Books Bunny brings together titles from a wide range of publishing houses onto a single, easy-to-browse platform.</p>" },
+    { "type": "image_picker", "id": "image", "label": "Image" },
+    { "type": "text", "id": "note_heading", "label": "Image note heading", "default": "Original books only" },
+    { "type": "textarea", "id": "note_text", "label": "Image note text", "default": "Every title is sourced through authorised channels with care for readers, publishers, and authors." },
+    { "type": "range", "id": "max_width", "label": "Content max width", "min": 900, "max": 1600, "step": 20, "unit": "px", "default": 1240 },
+    { "type": "range", "id": "side_padding", "label": "Left/right padding", "min": 0, "max": 80, "step": 2, "unit": "px", "default": 24 },
+    { "type": "range", "id": "padding_top", "label": "Top padding", "min": 0, "max": 140, "step": 4, "unit": "px", "default": 0 },
+    { "type": "range", "id": "padding_bottom", "label": "Bottom padding", "min": 0, "max": 140, "step": 4, "unit": "px", "default": 40 }
+  ],
+  "presets": [{ "name": "About story" }]
+}
+{% endschema %}

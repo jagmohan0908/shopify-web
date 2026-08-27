@@ -1,0 +1,115 @@
+{% liquid
+  assign source_collection = section.settings.author_collection | default: collections.all
+  assign collection_panel = section.settings.featured_collection | default: collections.all
+  assign all_books_url = routes.collections_url | append: '/all'
+  assign collection_url = collection_panel.url | default: all_books_url
+%}
+
+<div
+  class="sb-home sb-theme--{{ section.settings.color_theme }}"
+  style="
+    --sb-section-bg: {{ section.settings.background_color }};
+    --sb-section-heading: {{ section.settings.heading_color }};
+    --sb-section-text: {{ section.settings.text_color }};
+    --sb-section-accent: {{ section.settings.accent_color }};
+    --sb-section-card-bg: {{ section.settings.card_background }};
+    --sb-section-button-bg: {{ section.settings.button_background }};
+    --sb-section-button-text: {{ section.settings.button_text_color }};
+  "
+>
+  <section class="sb-feature sb-container">
+    {% for product in source_collection.products limit: 1 offset: section.settings.author_product_offset %}
+      {% liquid
+        assign featured_author = section.settings.author_name
+        if featured_author == blank
+          assign featured_author = product.metafields.custom.author.value | default: product.metafields.custom.author_name_and_about.value | default: product.metafields.book.author.value | default: product.vendor
+        endif
+        assign author_search_name = featured_author
+        if author_search_name contains ':'
+          assign author_search_parts = author_search_name | split: ':'
+          assign author_search_name = author_search_parts.last | strip
+        endif
+        assign encoded_author = author_search_name | url_encode
+        assign automatic_author_link = routes.search_url | append: '?view=author&type=product&q=*&filter.p.m.custom.author=' | append: encoded_author | append: '&author=' | append: encoded_author
+        assign final_author_link = section.settings.author_link | default: automatic_author_link
+      %}
+      <article class="sb-author-card">
+        <a class="sb-author-card__image" href="{{ product.url }}">
+          {% if section.settings.author_image != blank %}
+            {{ section.settings.author_image | image_url: width: 720 | image_tag: loading: 'lazy', alt: featured_author }}
+          {% elsif product.featured_image %}
+            {{ product.featured_image | image_url: width: 560 | image_tag: loading: 'lazy', widths: '300, 420, 560', sizes: '(max-width: 760px) 42vw, 220px', alt: featured_author }}
+          {% endif %}
+        </a>
+        <div>
+          {% if section.settings.kicker != blank %}<span>{{ section.settings.kicker }}</span>{% endif %}
+          {% if featured_author != blank %}<h2>{{ featured_author }}</h2>{% endif %}
+          {% if section.settings.quote != blank %}<p>{{ section.settings.quote }}</p>{% endif %}
+          {% if section.settings.author_link_label != blank %}
+            <a href="{{ final_author_link }}">{{ section.settings.author_link_label }}</a>
+          {% endif %}
+        </div>
+      </article>
+    {% endfor %}
+
+    <article class="sb-feature-collection">
+      {% if section.settings.collection_kicker != blank %}<span>{{ section.settings.collection_kicker }}</span>{% endif %}
+      <h3>{{ section.settings.collection_heading | default: collection_panel.title }}</h3>
+      <div class="sb-feature-collection__covers">
+        {% for product in collection_panel.products limit: 3 %}
+          <a href="{{ product.url }}">
+            {% if product.featured_image %}
+              {{ product.featured_image | image_url: width: 220 | image_tag: loading: 'lazy', alt: product.title }}
+            {% endif %}
+          </a>
+        {% endfor %}
+      </div>
+      <a class="sb-dark-button" href="{{ collection_url }}">{{ section.settings.collection_button_label }}</a>
+    </article>
+  </section>
+</div>
+
+{% schema %}
+{
+  "name": "Author feature",
+  "tag": "section",
+  "class": "section-featured-author-collection",
+  "settings": [
+    { "type": "collection", "id": "author_collection", "label": "Author source collection" },
+    { "type": "range", "id": "author_product_offset", "label": "Author product offset", "min": 0, "max": 20, "step": 1, "default": 3 },
+    { "type": "image_picker", "id": "author_image", "label": "Custom author image" },
+    { "type": "text", "id": "kicker", "label": "Author kicker", "default": "Self Help Books" },
+    { "type": "text", "id": "author_name", "label": "Author name override" },
+    { "type": "textarea", "id": "quote", "label": "Author text", "default": "Literature is the only place where the human soul is allowed to be as vast as the universe itself." },
+    { "type": "text", "id": "author_link_label", "label": "Author link label", "default": "View full collection" },
+    { "type": "url", "id": "author_link", "label": "Author link", "info": "Leave blank to automatically search all products by this author." },
+    { "type": "collection", "id": "featured_collection", "label": "Featured collection" },
+    { "type": "text", "id": "collection_kicker", "label": "Collection kicker", "default": "Featured Collection" },
+    { "type": "text", "id": "collection_heading", "label": "Collection heading" },
+    { "type": "text", "id": "collection_button_label", "label": "Button label", "default": "Explore Collection" },
+    {
+      "type": "select",
+      "id": "color_theme",
+      "label": "Color theme",
+      "options": [
+        { "value": "paper", "label": "Paper" },
+        { "value": "soft-blue", "label": "Soft blue" },
+        { "value": "crimson", "label": "Crimson" },
+        { "value": "navy", "label": "Navy" },
+        { "value": "custom", "label": "Custom" }
+      ],
+      "default": "custom"
+    },
+    { "type": "color", "id": "background_color", "label": "Custom background", "default": "#f8f9ff" },
+    { "type": "color", "id": "heading_color", "label": "Custom heading color", "default": "#0d1c2f" },
+    { "type": "color", "id": "text_color", "label": "Custom text color", "default": "#45464d" },
+    { "type": "color", "id": "accent_color", "label": "Custom accent color", "default": "#b6191a" },
+    { "type": "color", "id": "card_background", "label": "Custom card background", "default": "#d5e3fd" },
+    { "type": "color", "id": "button_background", "label": "Custom button background", "default": "#000000" },
+    { "type": "color", "id": "button_text_color", "label": "Custom button text", "default": "#ffffff" }
+  ],
+  "presets": [
+    { "name": "Author feature" }
+  ]
+}
+{% endschema %}

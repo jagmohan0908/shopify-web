@@ -1,0 +1,614 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "custom_hero_banner": {
+      "type": "custom-hero-banner",
+      "blocks": {
+        "banner_rare": {
+          "type": "banner",
+          "settings": {
+            "label": "",
+            "image": "shopify://shop_images/1.png",
+            "link": "shopify://collections/hindi-regional",
+            "product": ""
+          }
+        },
+        "banner_awards": {
+          "type": "banner",
+          "settings": {
+            "label": "",
+            "image": "shopify://shop_images/3.png",
+            "link": "shopify://collections/general",
+            "product": ""
+          }
+        },
+        "banner_curated": {
+          "type": "banner",
+          "settings": {
+            "label": "",
+            "image": "shopify://shop_images/2.png",
+            "link": "shopify://collections/bestsellers",
+            "product": ""
+          }
+        }
+      },
+      "block_order": [
+        "banner_rare",
+        "banner_awards",
+        "banner_curated"
+      ],
+      "settings": {
+        "heading": "Discover books from trusted publishers in one store.",
+        "copy": "",
+        "show_search": true,
+        "search_placeholder": "Search 10,000+ titles...",
+        "collection": "biography-memoir",
+        "text_alignment": "center",
+        "desktop_height": 500,
+        "color_theme": "custom",
+        "background_color": "#f8f9ff",
+        "panel_color": "#eff4ff",
+        "text_color": "#0d1c2f",
+        "muted_text_color": "#45464d",
+        "banner_overlay": 40
+      }
+    },
+    "discovery": {
+      "type": "discovery",
+      "blocks": {
+        "genre_xJdbyM": {
+          "type": "genre",
+          "settings": {
+            "label": "Mystery",
+            "collection": "mystery-thriller",
+            "product_offset": 0
+          }
+        },
+        "genre_history": {
+          "type": "genre",
+          "settings": {
+            "label": "History",
+            "collection": "history",
+            "product_offset": 4
+          }
+        },
+        "genre_science": {
+          "type": "genre",
+          "settings": {
+            "label": "Poetry",
+            "collection": "poetry",
+            "product_offset": 8
+          }
+        },
+        "genre_biography": {
+          "type": "genre",
+          "settings": {
+            "label": "Biography",
+            "collection": "",
+            "product_offset": 12
+          }
+        },
+        "genre_art": {
+          "type": "genre",
+          "settings": {
+            "label": "Art",
+            "collection": "",
+            "product_offset": 16
+          }
+        },
+        "genre_poetry": {
+          "type": "genre",
+          "disabled": true,
+          "settings": {
+            "label": "Poetry",
+            "collection": "",
+            "product_offset": 20
+          }
+        },
+        "genre_fiction": {
+          "type": "genre",
+          "settings": {
+            "label": "Fiction",
+            "collection": "",
+            "product_offset": 24
+          }
+        }
+      },
+      "block_order": [
+        "genre_xJdbyM",
+        "genre_history",
+        "genre_science",
+        "genre_biography",
+        "genre_art",
+        "genre_poetry",
+        "genre_fiction"
+      ],
+      "settings": {
+        "section_anchor": "genre-discovery",
+        "kicker": "",
+        "heading": "Curated Discovery",
+        "text": "",
+        "collection": "",
+        "products_per_tab": 4,
+        "compact_cards": true,
+        "layout": "sidebar",
+        "padding_top": 48,
+        "padding_bottom": 48,
+        "color_theme": "custom",
+        "background_color": "#f8f9ff",
+        "border_color": "#c6c6cd",
+        "title_color": "#0d1c2f",
+        "text_color": "#45464d",
+        "accent_color": "#b6191a",
+        "card_background": "#ffffff"
+      }
+    },
+    "trending_books": {
+      "type": "trending-books",
+      "settings": {
+        "section_anchor": "trending-now",
+        "heading": "Trending Now",
+        "text": "Most talked about releases this week",
+        "collection": "children",
+        "product_limit": 10,
+        "product_offset": 0,
+        "show_arrows": true,
+        "loop_slider": true,
+        "show_view_all": false,
+        "view_all_label": "View all",
+        "color_theme": "custom",
+        "background_color": "#f8f9ff",
+        "heading_color": "#0d1c2f",
+        "text_color": "#45464d",
+        "accent_color": "#b6191a",
+        "card_background": "#ffffff"
+      }
+    },
+    "explore_genres": {
+      "type": "explore-genres",
+      "disabled": true,
+      "blocks": {
+        "genre_8hgkxh": {
+          "type": "genre",
+          "settings": {
+            "label": "Mystery",
+            "link": "",
+            "icon": "search"
+          }
+        },
+        "genre_1": {
+          "type": "genre",
+          "settings": {
+            "label": "Mystery",
+            "link": "",
+            "icon": "search"
+          }
+        },
+        "genre_2": {
+          "type": "genre",
+          "settings": {
+            "label": "History",
+            "link": "",
+            "icon": "history"
+          }
+        },
+        "genre_3": {
+          "type": "genre",
+          "settings": {
+            "label": "Science",
+            "link": "",
+            "icon": "science"
+          }
+        },
+        "genre_4": {
+          "type": "genre",
+          "settings": {
+            "label": "Biography",
+            "link": "",
+            "icon": "person"
+          }
+        },
+        "genre_5": {
+          "type": "genre",
+          "settings": {
+            "label": "Art",
+            "link": "",
+            "icon": "layers"
+          }
+        },
+        "genre_6": {
+          "type": "genre",
+          "settings": {
+            "label": "Poetry",
+            "link": "",
+            "icon": "triangle"
+          }
+        },
+        "genre_7": {
+          "type": "genre",
+          "settings": {
+            "label": "Fiction",
+            "link": "",
+            "icon": "book"
+          }
+        },
+        "genre_nH6bim": {
+          "type": "genre",
+          "settings": {
+            "label": "Mystery",
+            "link": "",
+            "icon": "search"
+          }
+        }
+      },
+      "block_order": [
+        "genre_8hgkxh",
+        "genre_1",
+        "genre_2",
+        "genre_3",
+        "genre_4",
+        "genre_5",
+        "genre_6",
+        "genre_7",
+        "genre_nH6bim"
+      ],
+      "settings": {
+        "heading": "Explore Genres",
+        "color_theme": "custom",
+        "background_color": "#f8f9ff",
+        "heading_color": "#0d1c2f",
+        "text_color": "#45464d",
+        "accent_color": "#b6191a",
+        "card_background": "#ffffff",
+        "tile_background": "#eff4ff",
+        "image_fit": "cover"
+      }
+    },
+    "featured_author_collection": {
+      "type": "featured-author-collection",
+      "settings": {
+        "author_collection": "",
+        "author_product_offset": 3,
+        "kicker": "Author Name",
+        "author_name": "",
+        "quote": "Literature is the only place where the human soul is allowed to be as vast as the universe itself.",
+        "author_link_label": "View full collection",
+        "author_link": "",
+        "featured_collection": "",
+        "collection_kicker": "Featured Collection",
+        "collection_heading": "",
+        "collection_button_label": "Explore Collection",
+        "color_theme": "custom",
+        "background_color": "#f8f9ff",
+        "heading_color": "#0d1c2f",
+        "text_color": "{{ settings.color_palette.background }}",
+        "accent_color": "#b6191a",
+        "card_background": "#d5e3fd",
+        "button_background": "{{ settings.color_palette.background }}",
+        "button_text_color": "#ffffff"
+      }
+    },
+    "publisher_spotlight": {
+      "type": "publisher-spotlight",
+      "blocks": {
+        "publisher_penguin": {
+          "type": "publisher",
+          "settings": {
+            "publisher_vendor": "Hindi Yugm",
+            "book_limit": 4,
+            "publisher_name": "Hind Yugm",
+            "publisher_text": "",
+            "book_1_image": "shopify://shop_images/9788198986627.jpg",
+            "book_1_title": "Gurudutt",
+            "book_1_status": "Available Now",
+            "book_1_link": "https://bookstore-test-3.myshopify.com/products/9789350000489?_pos=1&_psq=guru+dut&_psid=c496dd0b1&_ss=e",
+            "book_2_title": "Legacy of the Sun",
+            "book_2_status": "Coming Soon",
+            "book_2_link": "",
+            "book_3_title": "Chronicles of the Past",
+            "book_3_status": "Available Now",
+            "book_3_link": "",
+            "book_4_title": "The Silent Voyage",
+            "book_4_status": "Coming Soon",
+            "book_4_link": ""
+          }
+        },
+        "publisher_harper": {
+          "type": "publisher",
+          "settings": {
+            "publisher_vendor": "HarperCollins",
+            "book_limit": 4,
+            "publisher_name": "HarperCollins",
+            "publisher_text": "Home to today's most influential storytellers.",
+            "book_1_title": "The New Frontier",
+            "book_1_status": "Available Now",
+            "book_1_link": "",
+            "book_2_title": "Legacy of the Sun",
+            "book_2_status": "Coming Soon",
+            "book_2_link": "",
+            "book_3_title": "Chronicles of the Past",
+            "book_3_status": "Available Now",
+            "book_3_link": "",
+            "book_4_title": "The Silent Voyage",
+            "book_4_status": "Available Now",
+            "book_4_link": ""
+          }
+        },
+        "publisher_vintage": {
+          "type": "publisher",
+          "settings": {
+            "publisher_vendor": "Vintage",
+            "book_limit": 4,
+            "publisher_name": "Vintage",
+            "publisher_text": "Breathtaking design meets unparalleled writing.",
+            "book_1_title": "The New Frontier",
+            "book_1_status": "Available Now",
+            "book_1_link": "",
+            "book_2_title": "Legacy of the Sun",
+            "book_2_status": "Coming Soon",
+            "book_2_link": "",
+            "book_3_title": "Chronicles of the Past",
+            "book_3_status": "Available Now",
+            "book_3_link": "",
+            "book_4_title": "The Silent Voyage",
+            "book_4_status": "Coming Soon",
+            "book_4_link": ""
+          }
+        }
+      },
+      "block_order": [
+        "publisher_penguin",
+        "publisher_harper",
+        "publisher_vintage"
+      ],
+      "settings": {
+        "section_anchor": "publishers",
+        "heading": "Publisher Spotlight",
+        "color_theme": "custom",
+        "background_color": "#f8f9ff",
+        "heading_color": "#0d1c2f",
+        "text_color": "#45464d",
+        "accent_color": "#b6191a",
+        "card_background": "#ffffff",
+        "available_label": "Available Now",
+        "unavailable_label": "Coming Soon",
+        "view_collection_label": "View full collection"
+      }
+    },
+    "award_banner": {
+      "type": "award-banner",
+      "settings": {
+        "kicker": "Prestigious Laurels",
+        "heading": "Booker Prize & Pulitzer Winners",
+        "text": "The pinnacle of writing. Explore the works that have earned the most coveted honors in global literature.",
+        "button_1_label": "Explore Award Winners",
+        "button_1_link": "",
+        "button_2_label": "View All-Time Laureates",
+        "button_2_link": "",
+        "symbol": "M",
+        "background_position": "center center",
+        "background_overlay": 45,
+        "color_theme": "custom",
+        "background_color": "#233144",
+        "text_color": "#ffffff",
+        "accent_color": "#ffb4ab",
+        "button_background": "#000000",
+        "button_text_color": "#ffffff"
+      }
+    },
+    "bestseller_lists": {
+      "type": "bestseller-lists",
+      "blocks": {
+        "list_1": {
+          "type": "list",
+          "settings": {
+            "heading": "Fiction",
+            "collection": "fiction"
+          }
+        },
+        "list_2": {
+          "type": "list",
+          "settings": {
+            "heading": "Non Fiction",
+            "collection": "biography-memoir"
+          }
+        },
+        "list_3": {
+          "type": "list",
+          "settings": {
+            "heading": "Self Improvement",
+            "collection": "self-help"
+          }
+        },
+        "list_4": {
+          "type": "list",
+          "settings": {
+            "heading": "Business",
+            "collection": "business-economics"
+          }
+        }
+      },
+      "block_order": [
+        "list_1",
+        "list_2",
+        "list_3",
+        "list_4"
+      ],
+      "settings": {
+        "heading": "Current Bestseller Lists",
+        "collection": "",
+        "bestseller_tag": "bestseller",
+        "products_per_list": 5,
+        "link_label": "",
+        "link": "shopify://collections/fiction",
+        "color_theme": "custom",
+        "background_color": "#f8f9ff",
+        "heading_color": "#0d1c2f",
+        "text_color": "#45464d",
+        "accent_color": "#b6191a",
+        "card_background": "#ffffff"
+      }
+    },
+    "book_reels": {
+      "type": "book-reels",
+      "settings": {
+        "heading": "Book Reels",
+        "text": "Watch short previews of our latest books.",
+        "collection": "",
+        "product_limit": 5,
+        "product_offset": 5,
+        "show_play_icon": true,
+        "color_theme": "custom",
+        "background_color": "#f8f9ff",
+        "heading_color": "#0d1c2f",
+        "text_color": "#45464d",
+        "accent_color": "#b6191a",
+        "card_background": "#ffffff"
+      }
+    },
+    "blog_posts": {
+      "type": "featured-blog-posts",
+      "blocks": {
+        "static-blog-title": {
+          "type": "_featured-blog-posts-title",
+          "name": "Title",
+          "static": true,
+          "settings": {
+            "text": "<h3>The Library Journal</h3>",
+            "type_preset": "rte"
+          },
+          "blocks": {}
+        },
+        "static-blog-post-card": {
+          "type": "_featured-blog-posts-card",
+          "name": "Blog card",
+          "static": true,
+          "settings": {},
+          "blocks": {
+            "title": {
+              "type": "_heading",
+              "name": "Title",
+              "static": true,
+              "settings": {
+                "text": "<h4>{{ closest.article.title }}</h4>",
+                "show_alignment": false
+              },
+              "blocks": {}
+            },
+            "blog-post-info-text": {
+              "type": "_blog-post-info-text",
+              "name": "Details",
+              "static": true,
+              "settings": {
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "show_alignment": false
+              },
+              "blocks": {}
+            },
+            "blog-post-description": {
+              "type": "_blog-post-description",
+              "name": "Excerpt",
+              "static": true,
+              "settings": {
+                "padding-block-start": 8,
+                "padding-block-end": 0
+              },
+              "blocks": {}
+            }
+          }
+        }
+      },
+      "settings": {
+        "blog": "news",
+        "layout_type": "grid",
+        "carousel_on_mobile": false,
+        "post_limit": 3,
+        "columns": 3,
+        "mobile_columns": "1",
+        "columns_gap": 24,
+        "rows_gap": 24,
+        "icons_style": "arrow",
+        "icons_shape": "none",
+        "section_width": "page-width",
+        "gap": 12,
+        "background_color": "#f8f9ff",
+        "padding-block-start": 40,
+        "padding-block-end": 52
+      }
+    },
+    "trust_promises": {
+      "type": "trust-promises",
+      "blocks": {
+        "promise_1": {
+          "type": "promise",
+          "settings": {
+            "icon_text": "1",
+            "heading": "Trusted by Readers",
+            "text": ""
+          }
+        },
+        "promise_2": {
+          "type": "promise",
+          "settings": {
+            "icon_text": "2",
+            "heading": "Originality",
+            "text": ""
+          }
+        },
+        "promise_3": {
+          "type": "promise",
+          "settings": {
+            "icon_text": "3",
+            "heading": "Fast Delivery",
+            "text": ""
+          }
+        },
+        "promise_4": {
+          "type": "promise",
+          "settings": {
+            "icon_text": "4",
+            "heading": "Quality Guaranteed",
+            "text": ""
+          }
+        }
+      },
+      "block_order": [
+        "promise_1",
+        "promise_2",
+        "promise_3",
+        "promise_4"
+      ],
+      "settings": {
+        "heading": "Store promises",
+        "color_theme": "custom",
+        "background_color": "#eff4ff",
+        "heading_color": "#0d1c2f",
+        "text_color": "#45464d",
+        "accent_color": "#6683b3",
+        "card_background": "#ffffff"
+      }
+    }
+  },
+  "order": [
+    "custom_hero_banner",
+    "discovery",
+    "trending_books",
+    "explore_genres",
+    "featured_author_collection",
+    "publisher_spotlight",
+    "award_banner",
+    "bestseller_lists",
+    "book_reels",
+    "blog_posts",
+    "trust_promises"
+  ]
+}

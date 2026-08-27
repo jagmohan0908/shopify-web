@@ -1,0 +1,54 @@
+{% layout none %}
+{% liquid
+  assign requested_author = request.params.author | default: request.params['filter.p.m.custom.author'] | default: ''
+
+  if requested_author == blank
+    for filter in search.filters
+      assign filter_label = filter.label | downcase
+      if filter.param_name contains 'author' or filter_label contains 'author'
+        if filter.active_values.size > 0
+          assign requested_author = filter.active_values.first.value | default: filter.active_values.first.label | strip
+        endif
+        break
+      endif
+    endfor
+  endif
+
+  assign requested_author_handle = requested_author | handleize
+  assign current_product_id = request.params.product_id | default: ''
+%}
+{% paginate search.results by 250 %}
+{
+  "page": {{ paginate.current_page | json }},
+  "pages": {{ paginate.pages | json }},
+  "products": [
+    {%- assign printed_product = false -%}
+    {%- for result in search.results -%}
+      {%- if result.object_type == 'product' -%}
+        {%- liquid
+          assign result_id = result.id | append: ''
+          assign result_author = result.metafields.custom.author.value | default: result.metafields.custom.author | default: result.metafields.custom.author_name_and_about.value | default: result.metafields.book.author.value | strip
+          assign result_author_handle = result_author | handleize
+        -%}
+        {%- assign product_matches_author = false -%}
+        {%- if requested_author_handle != blank and result_author_handle == requested_author_handle -%}
+          {%- assign product_matches_author = true -%}
+        {%- endif -%}
+        {%- if product_matches_author and result_id != current_product_id -%}
+          {%- if printed_product -%},{%- endif -%}
+          {
+            "id": {{ result.id | json }},
+            "title": {{ result.title | json }},
+            "url": {{ result.url | json }},
+            "author": {{ result_author | json }},
+            "price": {{ result.price | money | json }},
+            "compare_at_price": {% if result.compare_at_price > result.price %}{{ result.compare_at_price | money | json }}{% else %}null{% endif %},
+            "image": {% if result.featured_image %}{{ result.featured_image | image_url: width: 520 | json }}{% else %}null{% endif %}
+          }
+          {%- assign printed_product = true -%}
+        {%- endif -%}
+      {%- endif -%}
+    {%- endfor -%}
+  ]
+}
+{% endpaginate %}

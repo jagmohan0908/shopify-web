@@ -1,0 +1,343 @@
+{% liquid
+  assign phone_href = section.settings.phone | remove: ' ' | remove: '-'
+%}
+
+<section class="bb-contact-main-section color-{{ section.settings.color_scheme }}" style="--bb-accent: {{ section.settings.accent_color }}; --bb-card: {{ section.settings.card_color }}; --bb-bg: {{ section.settings.background_color }}; --bb-max: {{ section.settings.max_width }}px; --bb-side: {{ section.settings.side_padding }}px; --bb-top: {{ section.settings.padding_top }}px; --bb-bottom: {{ section.settings.padding_bottom }}px;">
+  <div class="bb-contact-section-inner">
+    <div class="bb-contact-main-grid">
+      <div class="bb-contact-info-stack">
+        <div class="bb-contact-info-card bb-contact-info-card--large">
+          <p class="bb-contact-kicker">{{ section.settings.address_label }}</p>
+          <h2>{{ section.settings.address_heading }}</h2>
+          <div class="bb-contact-text">{{ section.settings.address | newline_to_br }}</div>
+        </div>
+
+        <div class="bb-contact-info-mini">
+          <div class="bb-contact-info-card">
+            <p class="bb-contact-kicker">{{ section.settings.phone_label }}</p>
+            <h2>{{ section.settings.phone_heading }}</h2>
+            <a href="tel:{{ phone_href }}">{{ section.settings.phone }}</a>
+          </div>
+
+          <div class="bb-contact-info-card">
+            <p class="bb-contact-kicker">{{ section.settings.email_label }}</p>
+            <h2>{{ section.settings.email_heading }}</h2>
+            <a href="mailto:{{ section.settings.email }}">{{ section.settings.email }}</a>
+          </div>
+        </div>
+
+        {% if section.settings.manuscript_text != blank %}
+          <a class="bb-contact-cta-link" href="{{ section.settings.manuscript_link | default: '#' }}">
+            <span>{{ section.settings.manuscript_text }}</span>
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h12.2m-4.7-5 5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+        {% endif %}
+      </div>
+
+      <div class="bb-contact-form-card">
+        <p class="bb-contact-kicker">{{ section.settings.form_kicker }}</p>
+        <h2>{{ section.settings.form_heading }}</h2>
+        {% form 'contact', class: 'bb-contact-form' %}
+          {% if section.settings.response_email != blank %}
+            <input type="hidden" name="contact[Send responses to]" value="{{ section.settings.response_email | escape }}">
+          {% endif %}
+
+          {% if form.posted_successfully? %}
+            <div class="bb-contact-notice bb-contact-notice--success" tabindex="-1" autofocus>{{ section.settings.success_message }}</div>
+          {% endif %}
+
+          {% if form.errors %}
+            <div class="bb-contact-notice bb-contact-notice--error" tabindex="-1" autofocus>{{ form.errors | default_errors }}</div>
+          {% endif %}
+
+          <div class="bb-contact-field">
+            <label for="ContactName-{{ section.id }}">{{ section.settings.name_label }}</label>
+            <input id="ContactName-{{ section.id }}" type="text" name="contact[name]" value="{{ form.name }}" autocomplete="name" placeholder="{{ section.settings.name_label }}" required>
+          </div>
+
+          <div class="bb-contact-field">
+            <label for="ContactEmail-{{ section.id }}">{{ section.settings.email_field_label }}</label>
+            <input id="ContactEmail-{{ section.id }}" type="email" name="contact[email]" value="{{ form.email }}" autocomplete="email" placeholder="{{ section.settings.email_field_label }}" required>
+          </div>
+
+          <div class="bb-contact-field">
+            <label for="ContactPhone-{{ section.id }}">{{ section.settings.phone_field_label }}</label>
+            <input id="ContactPhone-{{ section.id }}" type="tel" name="contact[phone]" value="{{ form.phone }}" autocomplete="tel" placeholder="{{ section.settings.phone_field_label }}">
+          </div>
+
+          <div class="bb-contact-field">
+            <label for="ContactMessage-{{ section.id }}">{{ section.settings.message_label }}</label>
+            <textarea id="ContactMessage-{{ section.id }}" name="contact[body]" rows="4" placeholder="{{ section.settings.message_label }}">{{ form.body }}</textarea>
+          </div>
+
+          <button class="bb-contact-submit" type="submit">{{ section.settings.button_label }}</button>
+        {% endform %}
+      </div>
+    </div>
+  </div>
+</section>
+
+{% stylesheet %}
+  .bb-contact-main-section {
+    background: var(--bb-bg);
+    padding: var(--bb-top) 0 var(--bb-bottom);
+  }
+
+  .bb-contact-section-inner {
+    margin: 0 auto;
+    max-width: var(--bb-max);
+    padding-left: var(--bb-side);
+    padding-right: var(--bb-side);
+    width: 100%;
+  }
+
+  .bb-contact-kicker {
+    color: var(--bb-accent);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: .14em;
+    line-height: 1.2;
+    margin: 0 0 10px;
+    text-transform: uppercase;
+  }
+
+  .bb-contact-main-grid {
+    display: grid;
+    grid-template-columns: minmax(0, .92fr) minmax(340px, .78fr);
+    gap: clamp(18px, 3vw, 30px);
+    align-items: start;
+  }
+
+  .bb-contact-info-stack {
+    display: grid;
+    align-content: start;
+    align-self: start;
+    row-gap: 4px;
+  }
+
+  .bb-contact-info-mini {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-self: start;
+    column-gap: 12px;
+    row-gap: 4px;
+  }
+
+  .bb-contact-form-card {
+    background: var(--bb-card);
+    border: 1px solid rgba(16, 33, 58, .11);
+    border-radius: 0;
+    box-shadow: 0 18px 42px rgba(16, 33, 58, .08);
+    padding: clamp(22px, 3.2vw, 38px);
+  }
+
+  .bb-contact-info-card {
+    background: var(--bb-card);
+    border: 1px solid rgba(16, 33, 58, .11);
+    border-radius: 0;
+    box-shadow: 0 12px 28px rgba(16, 33, 58, .06);
+    box-sizing: border-box;
+    height: 140px;
+    min-height: 140px;
+    overflow: hidden;
+    padding: 20px;
+  }
+
+  .bb-contact-info-card--large {
+    height: 140px;
+    min-height: 140px;
+    display: block;
+  }
+
+  .bb-contact-info-card h2,
+  .bb-contact-form-card h2 {
+    color: #10213a;
+    font-family: var(--font-heading--family, serif);
+    font-size: clamp(22px, 2.5vw, 32px);
+    line-height: 1.08;
+    margin: 0 0 16px;
+  }
+
+  .bb-contact-info-card h2 {
+    font-size: clamp(18px, 1.8vw, 24px);
+    margin-bottom: 8px;
+  }
+
+  .bb-contact-text,
+  .bb-contact-info-card a {
+    color: rgba(16, 33, 58, .76);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .bb-contact-info-card a {
+    text-decoration: none;
+    word-break: break-word;
+  }
+
+  .bb-contact-info-card a:hover {
+    color: var(--bb-accent);
+  }
+
+  .bb-contact-cta-link {
+    align-items: center;
+    background: #10213a;
+    color: #fff;
+    display: flex;
+    font-size: 14px;
+    font-weight: 900;
+    gap: 12px;
+    justify-content: space-between;
+    min-height: 64px;
+    padding: 0 24px;
+    text-decoration: none;
+    transition: background .18s ease, transform .18s ease;
+  }
+
+  .bb-contact-cta-link svg {
+    height: 24px;
+    width: 24px;
+  }
+
+  .bb-contact-cta-link:hover {
+    background: var(--bb-accent);
+    transform: translateY(-2px);
+  }
+
+  .bb-contact-form {
+    display: grid;
+    gap: 14px;
+  }
+
+  .bb-contact-field {
+    display: grid;
+    gap: 7px;
+  }
+
+  .bb-contact-field label {
+    color: rgba(16, 33, 58, .72);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .bb-contact-field input,
+  .bb-contact-field textarea {
+    background: #fff;
+    border: 1px solid rgba(16, 33, 58, .18);
+    border-radius: 0;
+    color: #10213a;
+    font: inherit;
+    min-height: 48px;
+    padding: 13px 14px;
+    width: 100%;
+  }
+
+  .bb-contact-field textarea {
+    min-height: 118px;
+    resize: vertical;
+  }
+
+  .bb-contact-field input:focus,
+  .bb-contact-field textarea:focus {
+    border-color: var(--bb-accent);
+    box-shadow: 0 0 0 3px rgba(182, 25, 26, .13);
+    outline: none;
+  }
+
+  .bb-contact-submit {
+    appearance: none;
+    background: var(--bb-accent);
+    border: 1px solid var(--bb-accent);
+    border-radius: 0;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 900;
+    min-height: 50px;
+    padding: 0 24px;
+    transition: background .18s ease, transform .18s ease;
+    width: fit-content;
+  }
+
+  .bb-contact-submit:hover {
+    background: #10213a;
+    border-color: #10213a;
+    transform: translateY(-1px);
+  }
+
+  .bb-contact-notice {
+    border: 1px solid currentColor;
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 12px 14px;
+  }
+
+  .bb-contact-notice--success {
+    background: #effaf4;
+    color: #16784a;
+  }
+
+  .bb-contact-notice--error {
+    background: #fff4f4;
+    color: #b6191a;
+  }
+
+  @media (max-width: 899px) {
+    .bb-contact-main-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .bb-contact-section-inner {
+      padding-left: min(var(--bb-side), 20px);
+      padding-right: min(var(--bb-side), 20px);
+    }
+
+    .bb-contact-info-mini {
+      grid-template-columns: 1fr;
+    }
+
+    .bb-contact-submit {
+      width: 100%;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Contact info and form",
+  "settings": [
+    { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-1" },
+    { "type": "color", "id": "background_color", "label": "Background color", "default": "#f2f6ff" },
+    { "type": "color", "id": "card_color", "label": "Card background", "default": "#ffffff" },
+    { "type": "color", "id": "accent_color", "label": "Accent color", "default": "#b6191a" },
+    { "type": "range", "id": "max_width", "label": "Content max width", "min": 900, "max": 1600, "step": 20, "unit": "px", "default": 1240 },
+    { "type": "range", "id": "side_padding", "label": "Left/right padding", "min": 0, "max": 80, "step": 2, "unit": "px", "default": 24 },
+    { "type": "range", "id": "padding_top", "label": "Top padding", "min": 0, "max": 140, "step": 4, "unit": "px", "default": 16 },
+    { "type": "range", "id": "padding_bottom", "label": "Bottom padding", "min": 0, "max": 140, "step": 4, "unit": "px", "default": 32 },
+    { "type": "text", "id": "address_label", "label": "Address label", "default": "Address" },
+    { "type": "text", "id": "address_heading", "label": "Address heading", "default": "Visit our bookstore office" },
+    { "type": "textarea", "id": "address", "label": "Address", "default": "2/41 Ansari Road,\nDaryaganj,\nDelhi - 110002" },
+    { "type": "text", "id": "phone_label", "label": "Phone label", "default": "Contact info" },
+    { "type": "text", "id": "phone_heading", "label": "Phone heading", "default": "Sales" },
+    { "type": "text", "id": "phone", "label": "Phone", "default": "+91 8743060284" },
+    { "type": "text", "id": "email_label", "label": "Email label", "default": "Contact us" },
+    { "type": "text", "id": "email_heading", "label": "Email heading", "default": "Email" },
+    { "type": "text", "id": "email", "label": "Email", "default": "sales@unboundscript.com" },
+    { "type": "text", "id": "response_email", "label": "Send responses to email", "default": "sales@unboundscript.com", "info": "Shopify sends native contact forms to the store notification email. This value is also included inside the submitted contact message for routing/reference." },
+    { "type": "text", "id": "manuscript_text", "label": "Manuscript link text", "default": "For manuscript submission, click here" },
+    { "type": "text", "id": "manuscript_link", "label": "Manuscript link", "default": "mailto:sales@unboundscript.com?subject=Manuscript%20Submission" },
+    { "type": "text", "id": "form_kicker", "label": "Form kicker", "default": "Send a message" },
+    { "type": "text", "id": "form_heading", "label": "Form heading", "default": "Tell us what you need" },
+    { "type": "text", "id": "name_label", "label": "Name field label", "default": "Name" },
+    { "type": "text", "id": "email_field_label", "label": "Email field label", "default": "Email" },
+    { "type": "text", "id": "phone_field_label", "label": "Phone field label", "default": "Phone" },
+    { "type": "text", "id": "message_label", "label": "Message field label", "default": "Message" },
+    { "type": "text", "id": "button_label", "label": "Button label", "default": "Submit" },
+    { "type": "text", "id": "success_message", "label": "Success message", "default": "Thanks for contacting us. We will get back to you soon." }
+  ],
+  "presets": [{ "name": "Contact info and form" }]
+}
+{% endschema %}

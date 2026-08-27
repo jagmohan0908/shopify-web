@@ -1,0 +1,1102 @@
+/**
+ * Horizon overrides for Shopify.actions:
+ * - updateCart: emit events from the cart drawer scope.
+ * - openCart: open the cart drawer (fall back to /cart when absent).
+ */
+
+function init() {
+  const actions = window.Shopify?.actions;
+  if (!actions) return;
+
+  actions.updateCart.configure({
+    eventTarget: () => document.querySelector('theme-drawer#cart-drawer') ?? document,
+  });
+
+  actions.openCart.configure({
+    async handler() {
+      /** @type {HTMLElement & {open?: () => void} | null} */
+      const drawer = document.querySelector('theme-drawer#cart-drawer');
+
+      if (drawer?.open) {
+        drawer.open();
+      } else {
+        window.location.href = Theme.routes.cart_url || '/cart';
+      }
+    },
+  });
+}
+
+// Run immediately if the standard-actions bundle has already attached
+// `Shopify.actions`; otherwise wait for DOMContentLoaded, which fires after
+// all module scripts have executed regardless of document order.
+if (window.Shopify?.actions) {
+  init();
+} else {
+  document.addEventListener('DOMContentLoaded', init, { once: true });
+}
+
+/**
+ * Old publisher links from search pages can still contain `filter.p.vendor`.
+ * Collection/category pages must keep `filter.p.vendor` as an in-page filter,
+ * so this safeguard only normalizes search-page links.
+ */
+function normalizePublisherVendorUrl(rawUrl) {
+  try {
+    const parsed = new URL(rawUrl, window.location.origin);
+    const vendor = parsed.searchParams.get('filter.p.vendor');
+
+    if (!vendor) return null;
+
+    if (parsed.pathname === '/search') {
+      return `/collections/vendors?q=${encodeURIComponent(vendor)}${parsed.hash || ''}`;
+    }
+  } catch (error) {
+    return null;
+  }
+
+  return null;
+}
+
+function rewritePublisherVendorLinks() {
+  document.querySelectorAll('a[href*="filter.p.vendor"]').forEach((link) => {
+    const normalizedUrl = normalizePublisherVendorUrl(link.href);
+
+    if (normalizedUrl) {
+      link.href = normalizedUrl;
+    }
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', rewritePublisherVendorLinks, { once: true });
+} else {
+  rewritePublisherVendorLinks();
+}
+
+document.addEventListener(
+  'click',
+  (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const link = target ? target.closest('a[href*="filter.p.vendor"]') : null;
+
+    if (!link) return;
+
+    const normalizedUrl = normalizePublisherVendorUrl(link.href);
+
+    if (!normalizedUrl) return;
+
+    event.preventDefault();
+    window.location.href = normalizedUrl;
+  },
+  true
+);
+
+document.addEventListener('shopify:section:load', rewritePublisherVendorLinks);
+
+/**
+ * Publisher chips inside collection heroes use the same in-page search box.
+ * Clicking a chip simply places the publisher name in the collection search and
+ * runs the already-working catalogue filter on the same page.
+ */
+function initCollectionPublisherChips() {
+  const chips = Array.from(document.querySelectorAll('.bookstore-category-publishers a'));
+  const input = document.querySelector('[data-bookstore-collection-search-input], input[name="collection_search"]');
+  const url = new URL(window.location.href);
+  const initialVendor = url.searchParams.get('filter.p.vendor') || '';
+  const initialSearch = url.searchParams.get('collection_search') || '';
+
+  if (!chips.length) return;
+
+  const getChipSearchValue = (link) => {
+    try {
+      const parsed = new URL(link.href, window.location.origin);
+      return parsed.searchParams.get('collection_search') || parsed.searchParams.get('filter.p.vendor') || link.textContent.trim();
+    } catch (error) {
+      return link.textContent.trim();
+    }
+  };
+
+  const setActiveChip = (value) => {
+    const normalizedValue = normalizeCollectionSearchText(value);
+
+    chips.forEach((chip) => {
+      const normalizedChip = normalizeCollectionSearchText(getChipSearchValue(chip));
+      const isActive = normalizedValue && normalizedChip === normalizedValue;
+
+      chip.style.display = normalizedValue && !isActive ? 'none' : '';
+
+      if (isActive) {
+        chip.setAttribute('aria-current', 'page');
+      } else {
+        chip.removeAttribute('aria-current');
+      }
+    });
+  };
+
+  chips.forEach((link) => {
+    if (link.dataset.publisherChipFilterReady === 'true') return;
+
+    link.dataset.publisherChipFilterReady = 'true';
+    link.addEventListener('click', (event) => {
+      event.preventDefault();
+
+      const searchValue = getChipSearchValue(link);
+
+      if (input) {
+        input.value = searchValue;
+        input.focus();
+      }
+
+      applyCollectionPageSearch(searchValue, true, true);
+      setActiveChip(searchValue);
+    });
+  });
+
+  if (initialVendor && input) {
+    input.value = initialVendor;
+    applyCollectionPageSearch(initialVendor, true, true);
+    setActiveChip(initialVendor);
+  } else {
+    setActiveChip(initialSearch);
+  }
+}
+
+function getCollectionVendorFilter() {
+  const url = new URL(window.location.href);
+  return url.searchParams.get('filter.p.vendor') || '';
+}
+
+function getCollectionPublisherChipValue(link) {
+  try {
+    const parsed = new URL(link.href, window.location.origin);
+    return parsed.searchParams.get('collection_search') || parsed.searchParams.get('filter.p.vendor') || link.textContent.trim();
+  } catch (error) {
+    return link.textContent.trim();
+  }
+}
+
+function syncCollectionPublisherChips(query) {
+  const chips = Array.from(document.querySelectorAll('.bookstore-category-publishers a'));
+  const normalizedQuery = normalizeCollectionSearchText(query);
+
+  if (!chips.length) return;
+
+  const hasExactPublisher = normalizedQuery && chips.some((chip) => {
+    return normalizeCollectionSearchText(getCollectionPublisherChipValue(chip)) === normalizedQuery;
+  });
+
+  chips.forEach((chip) => {
+    const isActive = hasExactPublisher && normalizeCollectionSearchText(getCollectionPublisherChipValue(chip)) === normalizedQuery;
+
+    chip.style.display = hasExactPublisher && !isActive ? 'none' : '';
+
+    if (isActive) {
+      chip.setAttribute('aria-current', 'page');
+    } else {
+      chip.removeAttribute('aria-current');
+    }
+  });
+}
+
+function productItemMatchesVendor(item, vendor) {
+  const normalizedVendor = normalizeCollectionSearchText(vendor);
+  if (!normalizedVendor) return true;
+
+  const rawText = item.getAttribute('data-collection-search-text') || item.textContent || '';
+  const searchableText = normalizeCollectionSearchText(rawText);
+
+  return normalizedVendor.split(' ').filter(Boolean).every((token) => searchableText.includes(token));
+}
+
+function productItemMatchesSearch(item, query) {
+  const normalizedQuery = normalizeCollectionSearchText(query);
+  if (!normalizedQuery) return true;
+
+  const rawText = item.getAttribute('data-collection-search-text') || item.textContent || '';
+  const searchableText = normalizeCollectionSearchText(rawText);
+  const words = searchableText.split(' ').filter(Boolean);
+
+  return normalizedQuery.split(' ').filter(Boolean).every((token) => {
+    return words.some((word) => word.startsWith(token));
+  });
+}
+
+function getCollectionTotalCount() {
+  const countNode = document.querySelector('main[data-template^="collection"] [data-bookstore-visible-count]');
+  const rawCount = countNode?.getAttribute('data-bookstore-total-count') || countNode?.dataset.bookstoreOriginalCount || '';
+  const parsed = Number(String(rawCount).replace(/[^\d]/g, ''));
+
+  if (Number.isFinite(parsed) && parsed > 0) return parsed;
+
+  const grid = getCollectionSearchGrid();
+  const fallback = Number(grid?.dataset.bookstoreOriginalItemCount || 0);
+
+  return Number.isFinite(fallback) && fallback > 0 ? fallback : getCollectionSearchItems().length;
+}
+
+function setCollectionVisibleCount(count) {
+  const safeCount = Number.isFinite(Number(count)) ? Number(count) : getCollectionTotalCount();
+
+  document.querySelectorAll('main[data-template^="collection"] [data-bookstore-visible-count]').forEach((node) => {
+    node.textContent = String(safeCount);
+  });
+
+  document.querySelectorAll('main[data-template^="collection"] .products-count-wrapper span[role="status"]').forEach((node) => {
+    node.textContent = `${safeCount} ${safeCount === 1 ? 'item' : 'items'}`;
+  });
+}
+
+function filterExistingCollectionItemsByVendor(vendor) {
+  const items = getCollectionSearchItems();
+  const grid = getCollectionSearchGrid();
+  const wrapper = document.querySelector('main[data-template^="collection"] collection-component');
+  let visibleCount = 0;
+
+  items.forEach((item) => {
+    const isMatch = productItemMatchesVendor(item, vendor);
+
+    item.hidden = !isMatch;
+    item.style.display = isMatch ? '' : 'none';
+
+    if (isMatch) visibleCount += 1;
+  });
+
+  if (wrapper) {
+    wrapper.classList.toggle('bookstore-collection-vendor-filter-active', Boolean(vendor));
+  }
+
+  const message = ensureCollectionSearchMessage(grid);
+
+  if (message) {
+    message.textContent = vendor ? `No books found for ${vendor} in this collection.` : 'No books found for this search in this collection.';
+    message.hidden = !vendor || visibleCount > 0;
+  }
+
+  setCollectionVisibleCount(vendor ? visibleCount : items.length);
+
+  return visibleCount;
+}
+
+async function loadAllCollectionPagesForVendorFilter(vendor) {
+  if (!vendor) return;
+
+  const resultsList = document.querySelector('main[data-template^="collection"] results-list[section-id]');
+  const grid = getCollectionSearchGrid();
+
+  if (!resultsList || !grid || grid.dataset.vendorFilterLoaded === vendor) return;
+
+  const sectionId = resultsList.getAttribute('section-id');
+  const lastPage = Number(grid.dataset.lastPage || 1);
+
+  if (!sectionId || !lastPage || lastPage <= 1) {
+    grid.dataset.vendorFilterLoaded = vendor;
+    return;
+  }
+
+  const existingIds = new Set(
+    Array.from(grid.querySelectorAll('.product-grid__item[data-product-id]')).map((item) => item.getAttribute('data-product-id'))
+  );
+
+  for (let page = 2; page <= lastPage; page += 1) {
+    const url = buildBookstoreSectionPageUrl(page, sectionId);
+
+    try {
+      const response = await fetch(url.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      if (!response.ok) continue;
+
+      const html = await response.text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const nextItems = Array.from(doc.querySelectorAll('.product-grid__item[data-product-id]'));
+
+      nextItems.forEach((item) => {
+        const productId = item.getAttribute('data-product-id');
+        if (!productId || existingIds.has(productId)) return;
+        existingIds.add(productId);
+
+        if (productItemMatchesVendor(item, vendor)) {
+          item.hidden = false;
+          item.style.display = '';
+          grid.appendChild(item);
+        }
+      });
+    } catch (error) {
+      // Keep current visible matches if one extra page request fails.
+    }
+  }
+
+  grid.dataset.vendorFilterLoaded = vendor;
+}
+
+async function applyCollectionVendorFilterFromURL(loadAllPages = false) {
+  const vendor = getCollectionVendorFilter();
+
+  document.querySelectorAll('.bookstore-category-publishers a[href*="filter.p.vendor"]').forEach((link) => {
+    const linkVendor = new URL(link.href, window.location.origin).searchParams.get('filter.p.vendor') || '';
+    if (vendor && linkVendor === vendor) {
+      link.setAttribute('aria-current', 'page');
+    } else {
+      link.removeAttribute('aria-current');
+    }
+  });
+
+  let visibleCount = filterExistingCollectionItemsByVendor(vendor);
+
+  if (vendor && loadAllPages) {
+    await loadAllCollectionPagesForVendorFilter(vendor);
+    visibleCount = filterExistingCollectionItemsByVendor(vendor);
+  }
+
+  return visibleCount;
+}
+
+async function loadAllCollectionPagesForSearch(query) {
+  const normalizedQuery = normalizeCollectionSearchText(query);
+  if (!normalizedQuery) return;
+
+  const resultsList = document.querySelector('main[data-template^="collection"] results-list[section-id]');
+  const grid = getCollectionSearchGrid();
+
+  if (!resultsList || !grid) return;
+
+  const sectionId = resultsList.getAttribute('section-id');
+  const lastPage = Number(grid.dataset.lastPage || 1);
+  const loadedKey = `search:${normalizedQuery}`;
+
+  if (!sectionId || !lastPage || lastPage <= 1 || grid.dataset.collectionSearchLoaded === loadedKey) return;
+
+  const existingIds = new Set(
+    Array.from(grid.querySelectorAll('.product-grid__item[data-product-id]')).map((item) => item.getAttribute('data-product-id'))
+  );
+
+  for (let page = 2; page <= lastPage; page += 1) {
+    const url = buildBookstoreSectionPageUrl(page, sectionId);
+
+    try {
+      const response = await fetch(url.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      if (!response.ok) continue;
+
+      const html = await response.text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const nextItems = Array.from(doc.querySelectorAll('.product-grid__item[data-product-id]'));
+
+      nextItems.forEach((item) => {
+        const productId = item.getAttribute('data-product-id');
+        if (!productId || existingIds.has(productId)) return;
+        existingIds.add(productId);
+
+        if (productItemMatchesSearch(item, query)) {
+          item.hidden = false;
+          item.style.display = '';
+          grid.appendChild(item);
+        }
+      });
+    } catch (error) {
+      // Keep already loaded matches if one extra page request fails.
+    }
+  }
+
+  grid.dataset.collectionSearchLoaded = loadedKey;
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initCollectionPublisherChips, { once: true });
+} else {
+  initCollectionPublisherChips();
+}
+
+document.addEventListener('shopify:section:load', initCollectionPublisherChips);
+
+/**
+ * Collection/vendor hero search should filter the products on the same page.
+ * Shopify's normal product search goes to /search, but the client requested
+ * category and publisher pages to stay in place and behave like an in-page
+ * catalogue search.
+ */
+function normalizeCollectionSearchText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\u0900-\u097f]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isLikelyIsbnSearch(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  return digits.length >= 8;
+}
+
+function getCollectionSearchItems() {
+  return Array.from(document.querySelectorAll('main[data-template^="collection"] .product-grid__item'));
+}
+
+function getCollectionSearchGrid() {
+  return document.querySelector('main[data-template^="collection"] .product-grid');
+}
+
+function buildBookstoreSectionPageUrl(page, sectionId) {
+  const url = new URL(window.location.href);
+  url.searchParams.delete('page');
+  url.searchParams.delete('section_id');
+  url.searchParams.set('page', String(page));
+  url.searchParams.set('section_id', sectionId);
+  return url;
+}
+
+function rememberOriginalCollectionGrid() {
+  const grid = getCollectionSearchGrid();
+  const countNode = document.querySelector('main[data-template^="collection"] [data-bookstore-visible-count]');
+
+  if (countNode && !countNode.dataset.bookstoreOriginalCount) {
+    countNode.dataset.bookstoreOriginalCount = countNode.getAttribute('data-bookstore-total-count') || countNode.textContent.trim();
+  }
+
+  if (grid && !grid.dataset.bookstoreOriginalHtml) {
+    grid.dataset.bookstoreOriginalHtml = grid.innerHTML;
+    grid.dataset.bookstoreOriginalItemCount = String(getCollectionSearchItems().length);
+  }
+}
+
+function restoreOriginalCollectionGrid() {
+  const grid = getCollectionSearchGrid();
+  const wrapper = document.querySelector('main[data-template^="collection"] collection-component');
+  const message = document.querySelector('[data-bookstore-collection-search-empty]');
+
+  if (grid?.dataset.bookstoreOriginalHtml) {
+    grid.innerHTML = grid.dataset.bookstoreOriginalHtml;
+    delete grid.dataset.collectionSearchMode;
+    delete grid.dataset.collectionSearchLoaded;
+  }
+
+  if (wrapper) {
+    wrapper.classList.remove('bookstore-collection-search-active');
+  }
+
+  if (message) {
+    message.hidden = true;
+  }
+
+  setCollectionVisibleCount(getCollectionTotalCount());
+}
+
+function ensureCollectionSearchMessage(grid) {
+  if (!grid) return null;
+
+  let message = document.querySelector('[data-bookstore-collection-search-empty]');
+
+  if (!message) {
+    message = document.createElement('p');
+    message.setAttribute('data-bookstore-collection-search-empty', '');
+    message.className = 'bookstore-collection-search-empty';
+    message.textContent = 'No books found for this search in this collection.';
+    grid.insertAdjacentElement('afterend', message);
+  }
+
+  return message;
+}
+
+function updateCollectionSearchUrl(query) {
+  const url = new URL(window.location.href);
+
+  if (query) {
+    url.searchParams.set('collection_search', query);
+  } else {
+    url.searchParams.delete('collection_search');
+  }
+
+  window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+  renderBookstoreActiveQueryPills();
+}
+
+function renderBookstoreActiveQueryPills() {
+  const url = new URL(window.location.href);
+  const query = (url.searchParams.get('collection_search') || '').trim();
+
+  document.querySelectorAll('[data-bookstore-query-pill]').forEach((pill) => pill.remove());
+
+  if (!query) return;
+
+  document.querySelectorAll('.facets-remove').forEach((container) => {
+    const pill = document.createElement('button');
+    pill.type = 'button';
+    pill.className = 'pills__pill pills__pill--desktop-small facets-remove__pill bookstore-active-query-pill';
+    pill.setAttribute('data-bookstore-query-pill', '');
+    pill.innerHTML = `<span>Search: ${escapeCollectionSearchHtml(query)}</span><span aria-hidden="true">×</span><span class="visually-hidden">Remove search filter</span>`;
+
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('[data-bookstore-collection-search-input], input[name="collection_search"]').forEach((input) => {
+        input.value = '';
+      });
+      applyCollectionPageSearch('', true, false);
+      renderBookstoreActiveQueryPills();
+    });
+
+    container.prepend(pill);
+  });
+}
+
+function renderBookstoreActiveQueryPills() {
+  const url = new URL(window.location.href);
+  const activeFilters = [
+    {
+      param: 'collection_search',
+      label: 'Search',
+      value: (url.searchParams.get('collection_search') || '').trim(),
+    },
+    {
+      param: 'filter.p.vendor',
+      label: 'Publisher',
+      value: (url.searchParams.get('filter.p.vendor') || '').trim(),
+    },
+    {
+      param: 'filter.p.m.custom.author',
+      label: 'Author',
+      value: (url.searchParams.get('filter.p.m.custom.author') || url.searchParams.get('author') || '').trim(),
+    },
+  ].filter((filter) => filter.value && filter.value !== '*');
+
+  document.querySelectorAll('[data-bookstore-query-pill]').forEach((pill) => pill.remove());
+
+  if (!activeFilters.length) return;
+
+  document.querySelectorAll('.facets-remove').forEach((container) => {
+    activeFilters.slice().reverse().forEach((filter) => {
+      const normalizedContainerText = normalizeCollectionSearchText(container.textContent || '');
+      const normalizedValue = normalizeCollectionSearchText(filter.value);
+      if (normalizedValue && normalizedContainerText.includes(normalizedValue)) return;
+
+      const pill = document.createElement('button');
+      pill.type = 'button';
+      pill.className = 'pills__pill pills__pill--desktop-small facets-remove__pill bookstore-active-query-pill';
+      pill.setAttribute('data-bookstore-query-pill', '');
+      pill.setAttribute('data-bookstore-query-param', filter.param);
+      pill.innerHTML = `<span>${escapeCollectionSearchHtml(filter.label)}: ${escapeCollectionSearchHtml(filter.value)}</span><span aria-hidden="true">×</span><span class="visually-hidden">Remove ${escapeCollectionSearchHtml(filter.label)} filter</span>`;
+
+      pill.addEventListener('click', () => {
+        const nextUrl = new URL(window.location.href);
+        nextUrl.searchParams.delete(filter.param);
+
+        if (filter.param === 'collection_search') {
+          document.querySelectorAll('[data-bookstore-collection-search-input], input[name="collection_search"]').forEach((input) => {
+            input.value = '';
+          });
+          applyCollectionPageSearch('', true, false);
+          renderBookstoreActiveQueryPills();
+          return;
+        }
+
+        if (filter.param === 'filter.p.m.custom.author') {
+          nextUrl.searchParams.delete('author');
+          if (nextUrl.searchParams.get('view') === 'author') nextUrl.searchParams.delete('view');
+        }
+
+        nextUrl.searchParams.delete('page');
+        window.location.href = `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
+      });
+
+      container.prepend(pill);
+    });
+  });
+}
+
+function isExactCollectionPublisherQuery(query) {
+  const normalizedQuery = normalizeCollectionSearchText(query);
+  if (!normalizedQuery) return false;
+
+  return Array.from(document.querySelectorAll('.bookstore-category-publishers a')).some((chip) => {
+    return normalizeCollectionSearchText(getCollectionPublisherChipValue(chip)) === normalizedQuery;
+  });
+}
+
+function shouldUseGlobalCollectionSearch(query) {
+  const normalizedQuery = normalizeCollectionSearchText(query);
+  if (!normalizedQuery) return false;
+  if (isExactCollectionPublisherQuery(query)) return false;
+  if (isLikelyIsbnSearch(query)) return false;
+
+  return window.location.pathname.replace(/\/$/, '') === '/collections/all';
+}
+
+function escapeCollectionSearchHtml(value) {
+  return String(value || '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;',
+  })[char]);
+}
+
+function formatPredictiveSearchPrice(product) {
+  const price = product?.price_min || product?.price || '';
+  const numericPrice = Number(String(price).replace(/,/g, ''));
+
+  if (Number.isFinite(numericPrice)) {
+    try {
+      return new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: window.Shopify?.currency?.active || 'INR',
+        maximumFractionDigits: numericPrice % 1 === 0 ? 0 : 2,
+      }).format(numericPrice);
+    } catch (error) {
+      return `Rs. ${numericPrice.toFixed(numericPrice % 1 === 0 ? 0 : 2)}`;
+    }
+  }
+
+  return price ? `Rs. ${price}` : '';
+}
+
+function renderPredictiveCollectionSearchItem(product) {
+  const productId = product?.id || product?.handle || product?.url || '';
+  const title = product?.title || '';
+  const vendor = product?.vendor || '';
+  const productType = product?.type || '';
+  const url = product?.url || (product?.handle ? `/products/${product.handle}` : '#');
+  const image = product?.featured_image?.url || product?.image || '';
+  const price = formatPredictiveSearchPrice(product);
+  const searchText = [title, vendor, productType, product?.tags?.join?.(' ')].filter(Boolean).join(' ');
+
+  return `
+    <li
+      class="product-grid__item bookstore-predictive-collection-item"
+      data-product-id="${escapeCollectionSearchHtml(productId)}"
+      data-collection-search-text="${escapeCollectionSearchHtml(searchText)}"
+    >
+      <product-card class="product-card size-style bookstore-predictive-collection-card" data-product-id="${escapeCollectionSearchHtml(productId)}">
+        <a class="bookstore-predictive-collection-card__image" href="${escapeCollectionSearchHtml(url)}" aria-label="${escapeCollectionSearchHtml(title)}">
+          ${
+            image
+              ? `<img src="${escapeCollectionSearchHtml(image)}" alt="${escapeCollectionSearchHtml(title)}" loading="lazy">`
+              : `<span>${escapeCollectionSearchHtml(title.slice(0, 1) || 'B')}</span>`
+          }
+        </a>
+        <div class="bookstore-predictive-collection-card__body">
+          ${vendor ? `<p>${escapeCollectionSearchHtml(vendor)}</p>` : ''}
+          <h3><a href="${escapeCollectionSearchHtml(url)}">${escapeCollectionSearchHtml(title)}</a></h3>
+          ${price ? `<div class="bookstore-predictive-collection-card__price">${escapeCollectionSearchHtml(price)}</div>` : ''}
+        </div>
+      </product-card>
+    </li>
+  `;
+}
+
+async function loadPredictiveCollectionProducts(query) {
+  const url = new URL('/search/suggest.json', window.location.origin);
+  url.searchParams.set('q', query);
+  url.searchParams.set('resources[type]', 'product');
+  url.searchParams.set('resources[limit]', '10');
+  url.searchParams.set('resources[limit_scope]', 'each');
+  url.searchParams.set('resources[options][unavailable_products]', 'last');
+  url.searchParams.set('resources[options][fields]', 'title,product_type,variants.title,variants.sku,vendor');
+
+  const response = await fetch(url.toString(), { headers: { Accept: 'application/json' } });
+  if (!response.ok) return null;
+
+  const payload = await response.json();
+  return payload?.resources?.results?.products || [];
+}
+
+async function loadGlobalCollectionSearch(query) {
+  const normalizedQuery = normalizeCollectionSearchText(query);
+  if (!normalizedQuery) return false;
+
+  const grid = getCollectionSearchGrid();
+  const wrapper = document.querySelector('main[data-template^="collection"] collection-component');
+  const message = ensureCollectionSearchMessage(grid);
+
+  if (!grid) return false;
+
+  rememberOriginalCollectionGrid();
+
+  if (message) {
+    message.textContent = 'Finding matching books...';
+    message.hidden = false;
+  }
+
+  try {
+    const predictiveProducts = await loadPredictiveCollectionProducts(query);
+
+    if (Array.isArray(predictiveProducts)) {
+      grid.innerHTML = predictiveProducts.map(renderPredictiveCollectionSearchItem).join('');
+      grid.dataset.collectionSearchMode = 'predictive';
+
+      if (wrapper) {
+        wrapper.classList.toggle('bookstore-collection-search-active', true);
+      }
+
+      setCollectionVisibleCount(predictiveProducts.length);
+
+      if (message) {
+        message.textContent = 'No books found for this search in this collection.';
+        message.hidden = predictiveProducts.length > 0;
+      }
+
+      return true;
+    }
+  } catch (error) {
+    // Fall back to full search page parsing below if the predictive endpoint is unavailable.
+  }
+
+  const url = new URL('/search', window.location.origin);
+  url.searchParams.set('type', 'product');
+  url.searchParams.set('q', query);
+  url.searchParams.set('options[prefix]', 'last');
+
+  try {
+    const response = await fetch(url.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+    if (!response.ok) return false;
+
+    const html = await response.text();
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const searchItems = Array.from(doc.querySelectorAll('main[data-template^="search"] .product-grid__item[data-product-id], .product-grid__item[data-product-id]'))
+      .filter((item) => productItemMatchesSearch(item, query));
+    const resultCount = searchItems.length;
+
+    grid.innerHTML = '';
+    searchItems.forEach((item) => {
+      item.hidden = false;
+      item.style.display = '';
+      grid.appendChild(item);
+    });
+
+    grid.dataset.collectionSearchMode = 'global';
+
+    if (wrapper) {
+      wrapper.classList.toggle('bookstore-collection-search-active', true);
+    }
+
+    setCollectionVisibleCount(resultCount);
+
+    if (message) {
+      message.textContent = 'No books found for this search in this collection.';
+      message.hidden = resultCount > 0;
+    }
+
+    return true;
+  } catch (error) {
+    if (message) {
+      message.textContent = 'No books found for this search in this collection.';
+      message.hidden = true;
+    }
+  }
+
+  return false;
+}
+
+async function applyCollectionPageSearch(query, updateUrl = true, loadAllPages = false) {
+  rememberOriginalCollectionGrid();
+  syncCollectionPublisherChips(query);
+
+  const normalizedQuery = normalizeCollectionSearchText(query);
+  const tokens = normalizedQuery.split(' ').filter(Boolean);
+  const items = getCollectionSearchItems();
+  const grid = getCollectionSearchGrid();
+  const wrapper = document.querySelector('main[data-template^="collection"] collection-component');
+  let visibleCount = 0;
+
+  if (!items.length) return;
+
+  if (tokens.length === 0) {
+    restoreOriginalCollectionGrid();
+
+    if (updateUrl) {
+      updateCollectionSearchUrl('');
+    }
+
+    return;
+  }
+
+  if (loadAllPages && shouldUseGlobalCollectionSearch(query)) {
+    if (updateUrl) {
+      updateCollectionSearchUrl(query);
+    }
+
+    const usedGlobalSearch = await loadGlobalCollectionSearch(query);
+    if (usedGlobalSearch) return;
+  }
+
+  items.forEach((item) => {
+    const isMatch = productItemMatchesSearch(item, query);
+
+    item.hidden = !isMatch;
+    item.style.display = isMatch ? '' : 'none';
+
+    if (isMatch) visibleCount += 1;
+  });
+
+  const message = ensureCollectionSearchMessage(grid);
+
+  if (message) {
+    message.hidden = tokens.length === 0 || visibleCount > 0;
+    if (tokens.length > 0 && visibleCount === 0 && loadAllPages) {
+      message.textContent = 'Finding matching books...';
+      message.hidden = false;
+    } else {
+      message.textContent = 'No books found for this search in this collection.';
+    }
+  }
+
+  if (wrapper) {
+    wrapper.classList.toggle('bookstore-collection-search-active', tokens.length > 0);
+  }
+
+  setCollectionVisibleCount(visibleCount);
+
+  if (updateUrl) {
+    updateCollectionSearchUrl(query);
+  }
+
+  if (tokens.length > 0 && loadAllPages) {
+    await loadAllCollectionPagesForSearch(query);
+
+    if (getCollectionSearchItems().length !== items.length) {
+      return applyCollectionPageSearch(query, false, false);
+    }
+
+    if (message) {
+      message.textContent = 'No books found for this search in this collection.';
+      message.hidden = visibleCount > 0;
+    }
+  }
+}
+
+function initCollectionPageSearch() {
+  const forms = Array.from(document.querySelectorAll('[data-bookstore-collection-search]'));
+
+  forms.forEach((form) => {
+    const input = form.querySelector('[data-bookstore-collection-search-input], input[name="collection_search"]');
+
+    if (!input || form.dataset.collectionSearchReady === 'true') return;
+
+    form.dataset.collectionSearchReady = 'true';
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      applyCollectionPageSearch(input.value || '', true, true);
+    });
+
+    input.addEventListener('input', () => {
+      window.clearTimeout(input._bookstoreCollectionSearchTimer);
+      input._bookstoreCollectionSearchTimer = window.setTimeout(() => {
+        applyCollectionPageSearch(input.value || '', true, true);
+      }, 180);
+    });
+
+    const initialQuery = new URL(window.location.href).searchParams.get('collection_search') || input.value || '';
+
+    if (initialQuery) {
+      input.value = initialQuery;
+      applyCollectionPageSearch(initialQuery, false, true);
+    }
+  });
+
+  renderBookstoreActiveQueryPills();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initCollectionPageSearch, { once: true });
+} else {
+  initCollectionPageSearch();
+}
+
+document.addEventListener('shopify:section:load', initCollectionPageSearch);
+
+function upsertHiddenInput(form, name, value) {
+  if (!form || !name || value == null) return;
+
+  let input = Array.from(form.querySelectorAll(`input[type="hidden"][name="${CSS.escape(name)}"]`)).find((candidate) => {
+    return candidate.dataset.bookstoreInjected === 'true' || candidate.value === value;
+  });
+
+  if (!input) {
+    input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = name;
+    input.dataset.bookstoreInjected = 'true';
+    form.prepend(input);
+  }
+
+  input.value = value;
+}
+
+function initBookstoreAuthorFilterLock() {
+  const url = new URL(window.location.href);
+
+  if (url.pathname !== '/search') return;
+
+  const view = url.searchParams.get('view') || '';
+  const author = url.searchParams.get('author') || url.searchParams.get('filter.p.m.custom.author') || '';
+
+  if (view !== 'author' || !author || author === '*') return;
+
+  document.querySelectorAll('form[id^="FacetFiltersForm--"]').forEach((form) => {
+    upsertHiddenInput(form, 'view', 'author');
+    upsertHiddenInput(form, 'type', 'product');
+    upsertHiddenInput(form, 'q', '*');
+    upsertHiddenInput(form, 'author', author);
+    upsertHiddenInput(form, 'filter.p.m.custom.author', author);
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initBookstoreAuthorFilterLock, { once: true });
+} else {
+  initBookstoreAuthorFilterLock();
+}
+
+document.addEventListener('shopify:section:load', initBookstoreAuthorFilterLock);
+
+function initBookstoreSortPills() {
+  document.querySelectorAll('[data-bookstore-sort-pill]').forEach((pill) => {
+    if (pill.dataset.bookstoreSortReady === 'true') return;
+
+    pill.dataset.bookstoreSortReady = 'true';
+    pill.addEventListener('click', (event) => {
+      const sortValue = pill.getAttribute('data-sort-value');
+
+      if (!sortValue) return;
+
+      event.preventDefault();
+
+      const url = new URL(window.location.href);
+      url.searchParams.set('sort_by', sortValue);
+      url.searchParams.delete('page');
+      window.location.href = `${url.pathname}${url.search}${url.hash}`;
+    });
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initBookstoreSortPills, { once: true });
+} else {
+  initBookstoreSortPills();
+}
+
+document.addEventListener('shopify:section:load', initBookstoreSortPills);
+
+function initBookstoreAuthorSidebarSearch() {
+  document.querySelectorAll('[data-author-sidebar-search]').forEach((form) => {
+    if (form.dataset.bookstoreAuthorSidebarReady === 'true') return;
+
+    form.dataset.bookstoreAuthorSidebarReady = 'true';
+    const input = form.querySelector('input[name="author"]');
+    const filterInput = form.querySelector('[data-author-sidebar-filter-value]');
+
+    const syncAuthorValue = () => {
+      const authorName = String(input?.value || '').trim();
+      if (filterInput) filterInput.value = authorName;
+    };
+
+    input?.addEventListener('input', syncAuthorValue);
+    form.addEventListener('submit', syncAuthorValue);
+  });
+}
+
+function initBookstorePolicyHeadings() {
+  const path = window.location.pathname.replace(/\/$/, '');
+  const title =
+    document.querySelector('.shopify-policy__title h1') ||
+    document.querySelector('.shopify-policy__title') ||
+    document.querySelector('main h1');
+
+  if (!title) return;
+
+  if (path === '/policies/terms-of-service') {
+    title.textContent = 'Terms & Conditions';
+  }
+
+  if (path === '/policies/legal-notice') {
+    title.textContent = 'Copyright Policy';
+  }
+}
+
+function initBookstoreDocChangeFixes() {
+  initBookstoreAuthorSidebarSearch();
+  initBookstorePolicyHeadings();
+  renderBookstoreActiveQueryPills();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initBookstoreDocChangeFixes, { once: true });
+} else {
+  initBookstoreDocChangeFixes();
+}
+
+document.addEventListener('shopify:section:load', initBookstoreDocChangeFixes);
+
+/**
+ * A few imported book records contain mojibake fragments in visible card text
+ * (for example: "Madan Lal √¢ ,Ç¨ÀÜ..."). Until the source data is cleaned,
+ * remove the visibly broken suffix from cards so customers do not see garbage
+ * characters in collection/homepage grids.
+ */
+function cleanBookstoreMojibakeText(value) {
+  const text = String(value || '');
+  if (!/[√�]|‚Ç|,Ç|ÀÜ/.test(text)) return text;
+
+  return text
+    .split('√')[0]
+    .replace(/�+/g, '')
+    .replace(/\s*,?Ç[^\s]*/g, '')
+    .replace(/\s*‚Ç[^\s]*/g, '')
+    .replace(/\s*ÀÜ[^\s]*/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+([,.;:])/g, '$1')
+    .trim();
+}
+
+function sanitizeBookstoreVisibleText(root = document) {
+  const scope = root instanceof Element ? root : document;
+  const nodes = scope.querySelectorAll?.(
+    [
+      '.product-grid__item h3',
+      '.product-grid__item h4',
+      '.product-grid__item p',
+      '.product-grid__item span',
+      '.product-grid__item strong',
+      '.sb-publisher-book strong',
+      '.sb-publisher-book small',
+      '.rk-product-card__author',
+      '.rk-product-card__title',
+      '.rk-product-card__publisher',
+      '.sb-book-card h3',
+      '.sb-book-card p',
+    ].join(',')
+  );
+
+  if (!nodes) return;
+
+  nodes.forEach((node) => {
+    if (node.children.length > 0) return;
+    const cleaned = cleanBookstoreMojibakeText(node.textContent);
+    if (cleaned && cleaned !== node.textContent) {
+      node.textContent = cleaned;
+    }
+  });
+}
+
+function initBookstoreTextSanitizer() {
+  sanitizeBookstoreVisibleText(document);
+
+  if (window.__bookstoreTextSanitizerReady) return;
+  window.__bookstoreTextSanitizerReady = true;
+
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        if (node instanceof Element) sanitizeBookstoreVisibleText(node);
+      });
+    });
+  });
+
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initBookstoreTextSanitizer, { once: true });
+} else {
+  initBookstoreTextSanitizer();
+}
+
+document.addEventListener('shopify:section:load', () => sanitizeBookstoreVisibleText(document));

@@ -1,0 +1,111 @@
+{% liquid
+  assign row_limit = row_limit | default: 5
+  assign row_offset = row_offset | default: 0
+  assign shelf_collection = collection | default: collections.all
+  assign shelf_tone = tone | default: 'white'
+  assign shelf_tabs = tabs | default: ''
+  assign effective_offset = row_offset
+  assign shelf_url = shelf_collection.url
+  if shelf_url == blank
+    assign shelf_url = routes.collections_url | append: '/all'
+  endif
+  unless shelf_collection.handle == 'all'
+    assign effective_offset = 0
+  endunless
+%}
+
+{% if shelf_collection != blank and shelf_collection.products_count > 0 %}
+  <section class="rk-shelf rk-shelf--{{ shelf_tone }}"{% if section_id != blank %} id="{{ section_id }}"{% endif %}>
+    <div class="rk-shelf__head">
+      <div>
+        <h2>{{ title }}</h2>
+        {% if shelf_tabs != blank %}
+          <div class="rk-shelf__tabs">
+            {% assign tab_items = shelf_tabs | split: ',' %}
+            {% for tab in tab_items %}
+              <a class="{% if forloop.first %}is-active{% endif %}" href="{{ routes.search_url }}?type=product&q={{ tab | url_encode }}">{{ tab }}</a>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+      <div class="rk-shelf__actions">
+        <a class="rk-view-all" href="{{ shelf_url }}">View All &rsaquo;</a>
+        <div class="rk-carousel-controls" aria-label="{{ title | escape }} carousel controls">
+          <button type="button" data-carousel-previous aria-label="Previous {{ title | escape }}">&larr;</button>
+          <button type="button" data-carousel-next aria-label="Next {{ title | escape }}">&rarr;</button>
+        </div>
+      </div>
+    </div>
+
+    <bookstore-carousel class="rk-carousel" aria-label="{{ title | escape }} carousel">
+      <div class="rk-products" data-carousel-track>
+        {% for product in shelf_collection.products limit: row_limit offset: effective_offset %}
+          {% liquid
+            assign book_author = product.metafields.custom.author.value | default: product.metafields.custom.author_name_and_about.value | default: product.metafields.book.author.value
+            assign book_format = product.metafields.custom.format.value | default: product.metafields.book.format.value
+            assign shelf_product_form_id = 'ShelfProductForm-' | append: section_id | append: '-' | append: product.id
+            assign compare_price = product.compare_at_price
+            assign sale_percent = 0
+            if compare_price > product.price
+              assign sale_difference = compare_price | minus: product.price
+              assign sale_percent = sale_difference | times: 100 | divided_by: compare_price
+            endif
+          %}
+          <article class="rk-product-card" data-carousel-slide>
+            <a class="rk-product-card__media" href="{{ product.url }}" aria-label="{{ product.title | escape }}">
+              {% if product.featured_image %}
+                {{ product.featured_image | image_url: width: 360 | image_tag: loading: 'lazy', alt: product.title }}
+              {% else %}
+                <span>{{ product.title }}</span>
+              {% endif %}
+              {% if sale_percent > 0 %}<i>{{ sale_percent }}% off</i>{% endif %}
+            </a>
+            <div class="rk-product-card__body">
+              <a class="rk-product-card__title" href="{{ product.url }}">{{ product.title }}</a>
+              {% if book_author != blank %}
+                <span class="rk-product-card__author">{{ book_author }}</span>
+              {% endif %}
+              <span class="rk-product-card__publisher">{{ product.vendor }}</span>
+              {% if book_format != blank %}<span class="rk-product-card__format">{{ book_format }}</span>{% endif %}
+              <div class="rk-product-card__price">
+                <strong>{{ product.price | money }}</strong>
+                {% if product.compare_at_price > product.price %}
+                  <s>{{ product.compare_at_price | money }}</s>
+                {% endif %}
+                {% if sale_percent > 0 %}<em>{{ sale_percent }}% off</em>{% endif %}
+              </div>
+              <div class="rk-product-card__actions">
+                <a href="{{ product.url }}">View Details</a>
+                {% if product.available and product.selected_or_first_available_variant %}
+                  {% if product.has_only_default_variant %}
+                    <product-form-component
+                      data-section-id="{{ section_id }}"
+                      data-product-id="{{ product.id }}"
+                      data-product-url="{{ product.url }}"
+                      on:submit="/handleSubmit"
+                    >
+                      <div class="visually-hidden" aria-live="assertive" role="status" aria-atomic="true" ref="liveRegion"></div>
+                      {% form 'product', product, id: shelf_product_form_id, data-type: 'add-to-cart-form' %}
+                        <input type="hidden" name="id" ref="variantId" value="{{ product.selected_or_first_available_variant.id }}">
+                        {% render 'add-to-cart-button',
+                          add_to_cart_text: 'Add to Cart',
+                          class: 'rk-card-add',
+                          can_add_to_cart: true,
+                          product: product
+                        %}
+                      {% endform %}
+                    </product-form-component>
+                  {% else %}
+                    <a class="rk-card-choose" href="{{ product.url }}">Choose Options</a>
+                  {% endif %}
+                {% else %}
+                  <span>Sold Out</span>
+                {% endif %}
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    </bookstore-carousel>
+  </section>
+{% endif %}

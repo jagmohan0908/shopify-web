@@ -1,0 +1,48 @@
+{% liquid
+  assign product_resource = closest.product
+%}
+
+<div class="bs-inventory-pill{% unless product_resource.available %} bs-inventory-pill--out{% endunless %}">
+  {% if block.settings.show_icon %}<span aria-hidden="true"></span>{% endif %}
+  <strong>{% if product_resource.available %}{{ block.settings.in_stock_text }}{% else %}{{ block.settings.out_of_stock_text }}{% endif %}</strong>
+</div>
+
+{% stylesheet %}
+  .bs-inventory-pill {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    color: #333;
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
+  .bs-inventory-pill span {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: #4c7b40;
+  }
+
+  .bs-inventory-pill--out span {
+    background: #c62828;
+  }
+
+  .bs-inventory-pill--out {
+    color: #c62828;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Book inventory pill",
+  "settings": [
+    { "type": "checkbox", "id": "show_icon", "label": "Show icon", "default": true },
+    { "type": "text", "id": "in_stock_text", "label": "In stock text", "default": "In Stock" },
+    { "type": "text", "id": "out_of_stock_text", "label": "Out of stock text", "default": "Out of Stock" }
+  ],
+  "presets": [
+    { "name": "Book inventory pill" }
+  ]
+}
+{% endschema %}

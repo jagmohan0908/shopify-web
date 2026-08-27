@@ -1,0 +1,25 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "info": {
+      "type": "bookstore-info-page",
+      "settings": {
+        "eyebrow": "Wishlist",
+        "heading": "Wishlist",
+        "copy": "Save books for later and build reading lists.",
+        "default_content": "Save books you want to revisit, compare editions, and build reading lists for later purchases."
+      }
+    }
+  },
+  "order": [
+    "info"
+  ]
+}

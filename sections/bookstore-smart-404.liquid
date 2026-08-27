@@ -1,0 +1,74 @@
+{% liquid
+  assign requested_handle = request.path | split: '/pages/' | last | split: '/' | first
+  capture file_content
+    render 'bookstore-page-file-content', handle: requested_handle
+  endcapture
+  assign file_content_stripped = file_content | strip
+
+  assign page_title = requested_handle | replace: '-', ' ' | capitalize
+  case requested_handle
+    when 'about-us', 'about'
+      assign page_title = 'About Us'
+      assign eyebrow = 'About Books Bunny'
+      assign intro = 'A modern marketplace for books from trusted publishers.'
+    when 'privacy-policy', 'privacy'
+      assign page_title = 'Privacy Policy'
+      assign eyebrow = 'Privacy'
+      assign intro = 'How Books Bunny collects, uses, and protects customer information.'
+    when 'terms-and-conditions', 'terms'
+      assign page_title = 'Terms and Conditions'
+      assign eyebrow = 'Terms'
+      assign intro = 'Shopping, payment, order, intellectual property, and platform terms.'
+    when 'shipping-policy', 'shipping'
+      assign page_title = 'Shipping Policy'
+      assign eyebrow = 'Shipping'
+      assign intro = 'Domestic and international delivery timelines, charges, tracking, and support.'
+    when 'copyright-policy', 'copyright'
+      assign page_title = 'Copyright Policy'
+      assign eyebrow = 'Copyright'
+      assign intro = 'Copyright, intellectual property, and takedown notice information.'
+    when 'faq', 'faqs'
+      assign page_title = 'Frequently Asked Questions'
+      assign eyebrow = 'FAQ'
+      assign intro = 'Answers for readers, publishers, and institutional buyers.'
+  endcase
+%}
+
+<div class="bookstore-shell">
+  {% if file_content_stripped != blank %}
+    <section class="bookstore-page-hero">
+      <div class="bookstore-container">
+        <nav class="bookstore-copy" aria-label="Breadcrumb">
+          <a href="{{ routes.root_url }}">Home</a> /
+          <span>{{ page_title }}</span>
+        </nav>
+        <div class="bookstore-eyebrow">{{ eyebrow }}</div>
+        <h1 class="bookstore-heading">{{ page_title }}</h1>
+        <p class="bookstore-copy">{{ intro }}</p>
+      </div>
+    </section>
+    <section class="bookstore-section">
+      <div class="bookstore-container bookstore-info-content">
+        {{ file_content }}
+      </div>
+    </section>
+  {% else %}
+    <section class="bookstore-section">
+      <div class="bookstore-container bookstore-info-content" style="text-align:center">
+        <h1>Page not found</h1>
+        <p>The link may be incorrect, or the page has been removed.</p>
+        <p><a class="button" href="{{ routes.all_products_collection_url }}">Continue shopping</a></p>
+      </div>
+    </section>
+  {% endif %}
+</div>
+
+{% schema %}
+{
+  "name": "Bookstore smart 404",
+  "settings": [],
+  "presets": [
+    { "name": "Bookstore smart 404" }
+  ]
+}
+{% endschema %}

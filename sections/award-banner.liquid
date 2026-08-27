@@ -1,0 +1,102 @@
+{% liquid
+  assign all_books_url = routes.collections_url | append: '/all'
+  assign button_1_url = section.settings.button_1_link | default: all_books_url
+  assign button_2_url = section.settings.button_2_link | default: all_books_url
+%}
+
+<div
+  class="sb-home sb-theme--{{ section.settings.color_theme }}"
+  style="
+    --sb-section-bg: {{ section.settings.background_color }};
+    --sb-section-heading: {{ section.settings.text_color }};
+    --sb-section-text: {{ section.settings.text_color }};
+    --sb-section-accent: {{ section.settings.accent_color }};
+    --sb-section-button-bg: {{ section.settings.button_background }};
+    --sb-section-button-text: {{ section.settings.button_text_color }};
+    --sb-award-bg: {{ section.settings.background_color }};
+    --sb-award-text: {{ section.settings.text_color }};
+    --sb-award-image-position: {{ section.settings.background_position }};
+    --sb-award-overlay-opacity: {{ section.settings.background_overlay | divided_by: 100.0 }};
+  "
+>
+  <section class="sb-award sb-container{% if section.settings.background_image != blank %} sb-award--has-image{% endif %}">
+    {% if section.settings.background_image != blank %}
+      <span class="sb-award__bg" aria-hidden="true">
+        {{ section.settings.background_image | image_url: width: 2200 | image_tag: loading: 'lazy', widths: '900, 1400, 1800, 2200', sizes: '100vw', alt: '' }}
+      </span>
+    {% endif %}
+    <div>
+      {% if section.settings.kicker != blank %}<span>{{ section.settings.kicker }}</span>{% endif %}
+      {% if section.settings.heading != blank %}<h2>{{ section.settings.heading }}</h2>{% endif %}
+      {% if section.settings.text != blank %}<p>{{ section.settings.text }}</p>{% endif %}
+      <div class="sb-award__actions">
+        {% if section.settings.button_1_label != blank %}<a href="{{ button_1_url }}">{{ section.settings.button_1_label }}</a>{% endif %}
+        {% if section.settings.button_2_label != blank %}<a href="{{ button_2_url }}">{{ section.settings.button_2_label }}</a>{% endif %}
+      </div>
+    </div>
+    {% if section.settings.symbol != blank %}<strong aria-hidden="true">{{ section.settings.symbol }}</strong>{% endif %}
+  </section>
+</div>
+
+{% schema %}
+{
+  "name": "Award banner",
+  "tag": "section",
+  "class": "section-award-banner",
+  "settings": [
+    { "type": "text", "id": "kicker", "label": "Kicker", "default": "Prestigious Laurels" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Booker Prize & Pulitzer Winners" },
+    { "type": "textarea", "id": "text", "label": "Text", "default": "The pinnacle of writing. Explore the works that have earned the most coveted honors in global literature." },
+    { "type": "text", "id": "button_1_label", "label": "First button label", "default": "Explore Award Winners" },
+    { "type": "url", "id": "button_1_link", "label": "First button link" },
+    { "type": "text", "id": "button_2_label", "label": "Second button label", "default": "View All-Time Laureates" },
+    { "type": "url", "id": "button_2_link", "label": "Second button link" },
+    { "type": "text", "id": "symbol", "label": "Large background symbol", "default": "M" },
+    { "type": "image_picker", "id": "background_image", "label": "Background image" },
+    {
+      "type": "select",
+      "id": "background_position",
+      "label": "Background image position",
+      "options": [
+        { "value": "center center", "label": "Center" },
+        { "value": "center top", "label": "Top" },
+        { "value": "center bottom", "label": "Bottom" },
+        { "value": "left center", "label": "Left" },
+        { "value": "right center", "label": "Right" }
+      ],
+      "default": "center center"
+    },
+    {
+      "type": "range",
+      "id": "background_overlay",
+      "label": "Background overlay",
+      "min": 0,
+      "max": 90,
+      "step": 5,
+      "unit": "%",
+      "default": 45
+    },
+    {
+      "type": "select",
+      "id": "color_theme",
+      "label": "Color theme",
+      "options": [
+        { "value": "paper", "label": "Paper" },
+        { "value": "soft-blue", "label": "Soft blue" },
+        { "value": "crimson", "label": "Crimson" },
+        { "value": "navy", "label": "Navy" },
+        { "value": "custom", "label": "Custom" }
+      ],
+      "default": "custom"
+    },
+    { "type": "color", "id": "background_color", "label": "Background", "default": "#233144" },
+    { "type": "color", "id": "text_color", "label": "Text", "default": "#ffffff" },
+    { "type": "color", "id": "accent_color", "label": "Accent", "default": "#b6191a" },
+    { "type": "color", "id": "button_background", "label": "Button background", "default": "#000000" },
+    { "type": "color", "id": "button_text_color", "label": "Button text", "default": "#ffffff" }
+  ],
+  "presets": [
+    { "name": "Award banner" }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,197 @@
+<div
+  class="sb-home sb-theme--{{ section.settings.color_theme }}"
+  style="
+    --sb-section-bg: {{ section.settings.background_color }};
+    --sb-section-heading: {{ section.settings.heading_color }};
+    --sb-section-text: {{ section.settings.text_color }};
+    --sb-section-accent: {{ section.settings.accent_color }};
+    --sb-section-card-bg: {{ section.settings.card_background }};
+  "
+>
+  <section class="sb-section sb-publishers sb-container" id="{{ section.settings.section_anchor | default: 'publishers' }}">
+    {% if section.settings.heading != blank %}<h2>{{ section.settings.heading }}</h2>{% endif %}
+
+    <div class="sb-publisher-grid">
+      {% for block in section.blocks %}
+        {% liquid
+          assign publisher_vendor = block.settings.publisher_vendor
+          assign publisher_name = block.settings.publisher_name
+          assign publisher_text = block.settings.publisher_text
+
+          if publisher_vendor != blank
+            assign publisher_name = publisher_vendor
+          endif
+
+          assign selected_vendor_handle = publisher_vendor | handleize
+          assign encoded_publisher_name = publisher_name | url_encode
+          assign publisher_collection_url = routes.collections_url | append: '/vendors?q=' | append: encoded_publisher_name
+          assign publisher_vendor_pic = blank
+          if publisher_vendor != blank
+            for vendor_product in collections.all.products
+              assign product_vendor_handle = vendor_product.vendor | handleize
+              assign vendor_pic_file = vendor_product.metafields.custom.vendor_pic.value
+              if product_vendor_handle == selected_vendor_handle and vendor_pic_file != blank
+                if vendor_pic_file.preview_image != blank
+                  assign publisher_vendor_pic = vendor_pic_file.preview_image
+                elsif vendor_pic_file.image != blank
+                  assign publisher_vendor_pic = vendor_pic_file.image
+                else
+                  assign publisher_vendor_pic = vendor_pic_file
+                endif
+                break
+              endif
+            endfor
+          endif
+        %}
+        <article class="sb-publisher-card" {{ block.shopify_attributes }}>
+          {% if publisher_vendor_pic != blank %}
+            <div class="sb-publisher-card__vendor-image">
+              {{ publisher_vendor_pic | image_url: width: 240 | image_tag: loading: 'lazy', alt: publisher_name }}
+            </div>
+          {% endif %}
+          {% if publisher_name != blank %}<h3>{{ publisher_name }}</h3>{% endif %}
+          {% if publisher_text != blank %}<p>{{ publisher_text }}</p>{% endif %}
+
+          <div class="sb-publisher-card__books">
+            {% if publisher_vendor != blank %}
+              {% assign vendor_product_count = 0 %}
+              {% for product in collections.all.products %}
+                {% assign product_vendor_handle = product.vendor | handleize %}
+                {% if product_vendor_handle == selected_vendor_handle and vendor_product_count < block.settings.book_limit %}
+                  {% assign vendor_product_count = vendor_product_count | plus: 1 %}
+                  <a class="sb-publisher-book" href="{{ product.url }}">
+                    <span class="sb-publisher-book__image">
+                      {% if product.featured_image != blank %}
+                        {{ product.featured_image | image_url: width: 160 | image_tag: loading: 'lazy', widths: '80, 120, 160', sizes: '56px', alt: product.title }}
+                      {% else %}
+                        {% render 'bookstore-sample-cover', title: product.title, product: product, class: 'sb-publisher-book__fallback' %}
+                      {% endif %}
+                    </span>
+                    <span class="sb-publisher-book__meta">
+                      <strong>{{ product.title }}</strong>
+                      <small>{{ product.price | money }}</small>
+                    </span>
+                  </a>
+                {% endif %}
+              {% endfor %}
+
+              {% if vendor_product_count == 0 %}
+                <span class="sb-publisher-card__empty">No books found for this vendor. Check the vendor spelling.</span>
+              {% endif %}
+            {% else %}
+              {% for index in (1..4) %}
+                {% liquid
+                  assign title_id = 'book_' | append: index | append: '_title'
+                  assign status_id = 'book_' | append: index | append: '_status'
+                  assign link_id = 'book_' | append: index | append: '_link'
+                  assign image_id = 'book_' | append: index | append: '_image'
+                  assign book_title = block.settings[title_id]
+                  assign book_status = block.settings[status_id]
+                  assign book_link = block.settings[link_id]
+                  assign book_image = block.settings[image_id]
+                %}
+
+                {% if book_title != blank or book_image != blank %}
+                  <a class="sb-publisher-book" href="{{ book_link | default: routes.search_url }}">
+                    <span class="sb-publisher-book__image">
+                      {% if book_image != blank %}
+                        {{ book_image | image_url: width: 160 | image_tag: loading: 'lazy', widths: '80, 120, 160', sizes: '56px', alt: book_title }}
+                      {% else %}
+                        {% render 'bookstore-sample-cover', title: book_title, class: 'sb-publisher-book__fallback' %}
+                      {% endif %}
+                    </span>
+                    <span class="sb-publisher-book__meta">
+                      {% if book_title != blank %}<strong>{{ book_title }}</strong>{% endif %}
+                      {% if book_status != blank %}<small>{{ book_status }}</small>{% endif %}
+                    </span>
+                  </a>
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+          </div>
+          {% if section.settings.view_collection_label != blank and publisher_name != blank %}
+            <a class="sb-publisher-card__view" href="{{ publisher_collection_url }}">{{ section.settings.view_collection_label }}</a>
+          {% endif %}
+        </article>
+      {% else %}
+        <p class="sb-empty">Add publisher blocks, then enter the exact product vendor name.</p>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+{% schema %}
+{
+  "name": "Publisher spotlight",
+  "tag": "section",
+  "class": "section-publisher-spotlight",
+  "settings": [
+    { "type": "text", "id": "section_anchor", "label": "Section anchor ID", "default": "publishers" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Publisher Spotlight" },
+    {
+      "type": "select",
+      "id": "color_theme",
+      "label": "Color theme",
+      "options": [
+        { "value": "paper", "label": "Paper" },
+        { "value": "soft-blue", "label": "Soft blue" },
+        { "value": "crimson", "label": "Crimson" },
+        { "value": "navy", "label": "Navy" },
+        { "value": "custom", "label": "Custom" }
+      ],
+      "default": "custom"
+    },
+    { "type": "color", "id": "background_color", "label": "Custom background", "default": "#f8f9ff" },
+    { "type": "color", "id": "heading_color", "label": "Custom heading color", "default": "#0d1c2f" },
+    { "type": "color", "id": "text_color", "label": "Custom text color", "default": "#45464d" },
+    { "type": "color", "id": "accent_color", "label": "Custom accent color", "default": "#b6191a" },
+    { "type": "color", "id": "card_background", "label": "Custom card background", "default": "#ffffff" },
+    { "type": "text", "id": "available_label", "label": "Legacy auto label", "default": "Price" },
+    { "type": "text", "id": "unavailable_label", "label": "Auto unavailable label", "default": "Coming Soon" },
+    { "type": "text", "id": "view_collection_label", "label": "Publisher view link label", "default": "View full collection" }
+  ],
+  "blocks": [
+    {
+      "type": "publisher",
+      "name": "Publisher card",
+      "settings": [
+        { "type": "text", "id": "publisher_vendor", "label": "Publisher vendor name", "info": "Enter the exact Product vendor name. Books with the same vendor will show automatically." },
+        { "type": "range", "id": "book_limit", "label": "Auto books to show", "min": 1, "max": 6, "step": 1, "default": 4 },
+        { "type": "text", "id": "publisher_name", "label": "Manual publisher name fallback", "default": "Penguin Classics" },
+        { "type": "textarea", "id": "publisher_text", "label": "Publisher description", "default": "The definitive collection of timeless literature." },
+        { "type": "header", "content": "Book 1" },
+        { "type": "image_picker", "id": "book_1_image", "label": "Book image" },
+        { "type": "text", "id": "book_1_title", "label": "Book title", "default": "The New Frontier" },
+        { "type": "text", "id": "book_1_status", "label": "Status", "default": "Available Now" },
+        { "type": "url", "id": "book_1_link", "label": "Book link" },
+        { "type": "header", "content": "Book 2" },
+        { "type": "image_picker", "id": "book_2_image", "label": "Book image" },
+        { "type": "text", "id": "book_2_title", "label": "Book title", "default": "Legacy of the Sun" },
+        { "type": "text", "id": "book_2_status", "label": "Status", "default": "Coming Soon" },
+        { "type": "url", "id": "book_2_link", "label": "Book link" },
+        { "type": "header", "content": "Book 3" },
+        { "type": "image_picker", "id": "book_3_image", "label": "Book image" },
+        { "type": "text", "id": "book_3_title", "label": "Book title", "default": "Chronicles of the Past" },
+        { "type": "text", "id": "book_3_status", "label": "Status", "default": "Available Now" },
+        { "type": "url", "id": "book_3_link", "label": "Book link" },
+        { "type": "header", "content": "Book 4" },
+        { "type": "image_picker", "id": "book_4_image", "label": "Book image" },
+        { "type": "text", "id": "book_4_title", "label": "Book title", "default": "The Silent Voyage" },
+        { "type": "text", "id": "book_4_status", "label": "Status", "default": "Coming Soon" },
+        { "type": "url", "id": "book_4_link", "label": "Book link" }
+      ]
+    }
+  ],
+  "max_blocks": 6,
+  "presets": [
+    {
+      "name": "Publisher spotlight",
+      "blocks": [
+        { "type": "publisher", "settings": { "publisher_vendor": "Penguin Classics", "publisher_name": "Penguin Classics", "publisher_text": "The definitive collection of timeless literature." } },
+        { "type": "publisher", "settings": { "publisher_vendor": "HarperCollins", "publisher_name": "HarperCollins", "publisher_text": "Home to today's most influential storytellers." } },
+        { "type": "publisher", "settings": { "publisher_vendor": "Vintage", "publisher_name": "Vintage", "publisher_text": "Breathtaking design meets unparalleled writing." } }
+      ]
+    }
+  ]
+}
+{% endschema %}

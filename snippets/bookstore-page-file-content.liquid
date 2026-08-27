@@ -1,0 +1,118 @@
+{% liquid
+  assign page_handle = handle | default: page.handle
+%}
+
+{% case page_handle %}
+  {% when 'about-us', 'about' %}
+    <h2>About Books Bunny</h2>
+    <p>Books Bunny is an online bookstore built for readers who want it all in one place — fiction, non-fiction, children's books, poetry, educational titles, and more, sourced from publishers across India and beyond.</p>
+    <p>We believe finding the right book shouldn't mean hopping between ten different websites. Books Bunny brings together titles from a wide range of publishing houses onto a single, easy-to-browse platform, so readers of every age and interest can discover, compare, and order books with ease.</p>
+    <p>Every title on Books Bunny is 100% original and sourced directly through authorised channels. We do not list pirated, counterfeit, or unauthorised copies of any book.</p>
+    <h3>What We Offer</h3>
+    <ul>
+      <li>A curated, wide-ranging catalogue spanning multiple publishers and genres.</li>
+      <li>Reliable delivery across India, with select international shipping.</li>
+      <li>Support for bulk and institutional orders for schools, libraries, and organisations.</li>
+      <li>A simple, secure ordering and payment experience.</li>
+    </ul>
+    <h3>Our Promise</h3>
+    <p>Every book on Books Bunny is sourced with care, and every order is handled with the same attention we'd want as readers ourselves. We're committed to fair dealings with publishers and authors, transparent policies for customers, and a shopping experience that puts books first.</p>
+    <h3>Contact Us</h3>
+    <p>Email: <a href="mailto:sales@unboundscript.com">sales@unboundscript.com</a><br>Phone: <a href="tel:+918743060284">+91-8743060284</a><br>Address: 2/41 Ansari Road, Daryaganj, Delhi – 110002</p>
+
+  {% when 'privacy-policy', 'privacy' %}
+    <h2>Privacy Policy</h2>
+    <p>Books Bunny values your privacy and is committed to protecting your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you interact with our website, services, or other interactions.</p>
+    <h3>1. Information We Collect</h3>
+    <p><strong>Personal information:</strong> full name, email address, phone number, and address when you contact us, place an order, or engage with our services.</p>
+    <p><strong>Non-personal information:</strong> browser type, operating system, IP address, visit time, and pages viewed.</p>
+    <h3>2. How We Use Your Information</h3>
+    <ul>
+      <li>To process orders and manage delivery.</li>
+      <li>To respond to inquiries and provide customer support.</li>
+      <li>To send important updates, newsletters, or promotional materials.</li>
+      <li>To improve the website experience and comply with legal obligations.</li>
+    </ul>
+    <h3>3. Sharing Your Information</h3>
+    <p>We do not sell or rent your personal information. We may share information with service providers, publishers fulfilling orders, courier partners, legal authorities where required, or as part of a business transfer.</p>
+    <h3>4. Data Security and Your Rights</h3>
+    <p>We use reasonable safeguards to protect personal information, though no internet transmission is completely secure. You may request access, correction, opt-out from promotional communication, or deletion subject to legal requirements.</p>
+    <h3>5. Third-Party Links and Changes</h3>
+    <p>Our website may include links to third-party or publisher websites. We are not responsible for their privacy practices. We may update this policy from time to time, and continued use of the platform indicates acceptance of the updated policy.</p>
+    <h3>Contact Us</h3>
+    <p>Email: <a href="mailto:sales@unboundscript.com">sales@unboundscript.com</a><br>Phone: <a href="tel:+918743060284">+91-8743060284</a><br>Address: 2/41 Ansari Road, Daryaganj, Delhi – 110002</p>
+
+  {% when 'terms-and-conditions', 'terms' %}
+    <h2>Terms and Conditions</h2>
+    <p>Welcome to Books Bunny, an online bookstore bringing together books from a wide range of publishers for readers of all ages. By accessing our website, products, and services, you agree to comply with these terms and conditions.</p>
+    <h3>1. General and Use of Services</h3>
+    <p>These terms govern your use of our website and services. You agree to use the platform lawfully and respectfully. Unauthorised activities such as hacking, phishing, or distributing malicious content are prohibited.</p>
+    <h3>2. Orders and Payments</h3>
+    <p>All orders are subject to availability and confirmation of payment. Prices are displayed in INR and include applicable taxes unless stated otherwise. Books Bunny may cancel or reject orders due to errors, fraudulent activity, stock unavailability, or publisher fulfilment issues.</p>
+    <h3>3. Shipping, Returns, and Refunds</h3>
+    <p>We deliver within India and internationally, subject to logistics availability. Orders are typically dispatched within 3–4 business days. Returns are accepted for damaged or defective items within 7 days of delivery. Approved refunds are processed to the original payment method within 7–10 working days. Digital products such as eBooks and audiobooks are non-refundable.</p>
+    <h3>4. Intellectual Property</h3>
+    <p>Books sold on Books Bunny remain the intellectual property of their respective publishers and authors. Website content created by Books Bunny, including text, logos, images, and design, may not be copied or distributed without consent.</p>
+    <h3>5. User Content, Privacy, and Liability</h3>
+    <p>Users may post respectful reviews or comments that do not violate laws or third-party rights. Your use of the platform is also governed by our Privacy Policy. Books Bunny is not liable for indirect or consequential damages, and total liability is limited to the amount paid for the relevant product or service.</p>
+    <h3>6. Governing Law</h3>
+    <p>These terms are governed by the laws of India. Disputes will be subject to the exclusive jurisdiction of the courts in Delhi, India.</p>
+    <h3>Contact Us</h3>
+    <p>Email: <a href="mailto:sales@unboundscript.com">sales@unboundscript.com</a><br>Phone: <a href="tel:+918743060284">+91-8743060284</a><br>Address: 2/41 Ansari Road, Daryaganj, Delhi – 110002</p>
+
+  {% when 'shipping-policy', 'shipping' %}
+    <h2>Shipping Policy</h2>
+    <p>At Books Bunny, we are committed to delivering your orders efficiently and on time. Please review our shipping policies below to understand how we handle domestic and international shipping.</p>
+    <h3>1. Shipping Locations and Charges</h3>
+    <p>We offer shipping within India and to selected international destinations. Domestic standard shipping is free for orders above ₹500; a flat fee of ₹50 applies below ₹500. Express and international shipping charges may vary by location, weight, and courier service.</p>
+    <p>International import duties, taxes, and other fees are the customer's responsibility and may be collected by the destination country upon delivery.</p>
+    <h3>2. Processing and Delivery Time</h3>
+    <p>Orders are dispatched within 3–4 business days, excluding weekends and holidays. Domestic standard delivery usually takes 5–7 business days from dispatch; express delivery usually takes 2–3 business days. International delivery typically takes 7–21 business days from dispatch.</p>
+    <h3>3. Tracking and Address Accuracy</h3>
+    <p>Once dispatched, you will receive email or SMS tracking details. If you do not receive tracking within 48 hours of dispatch, contact us. Customers are responsible for accurate and complete shipping information.</p>
+    <h3>4. Failed Delivery, Lost, or Damaged Shipments</h3>
+    <p>If delivery fails due to an incorrect address or recipient unavailability, re-delivery may be attempted. If a package is returned, reshipping charges may apply. For lost or damaged shipments, contact us within 7 days of the expected delivery date so we can work with the courier partner on replacement or refund.</p>
+    <h3>Contact Us</h3>
+    <p>Email: <a href="mailto:sales@unboundscript.com">sales@unboundscript.com</a><br>Phone: <a href="tel:+918743060284">+91-8743060284</a><br>Address: 2/41 Ansari Road, Daryaganj, Delhi – 110002</p>
+
+  {% when 'copyright-policy', 'copyright' %}
+    <h2>Copyright Policy</h2>
+    <p>The copyright in this website and its contents belongs to Books Bunny unless otherwise stated. Certain materials may be owned by publishers, authors, licensors, or other third parties and are displayed with necessary permissions or applicable agreements.</p>
+    <p>Website content including text, images, graphics, logos, book descriptions, illustrations, design, layouts, and other materials is protected by applicable copyright and intellectual property laws. No part of the website may be copied, reproduced, modified, distributed, republished, transmitted, displayed, or commercially exploited without written permission.</p>
+    <h3>Intellectual Property Rights Policy</h3>
+    <p>The trademarks, trade names, logos, service marks, brand elements, and other identifiers displayed on the website, including the name Books Bunny, are the intellectual property of Books Bunny or their respective owners.</p>
+    <h3>Copyright Infringement Notification</h3>
+    <p>If you believe any content on the website infringes your copyright, please submit a written notice containing identification of the disputed content, the URL, details of your original copyrighted work, protected country or countries, an explanation of infringement, your contact details, good-faith statement, accuracy declaration, and your physical or electronic signature.</p>
+    <h3>Submit a Notice</h3>
+    <p>Legal Team – Books Bunny<br>Address: 2/41 Ansari Road, Daryaganj, Delhi – 110002, India<br>Email: <a href="mailto:sales@unboundscript.com">sales@unboundscript.com</a><br>Phone: <a href="tel:+918743060284">+91-8743060284</a></p>
+    <p>Upon receiving a complete and valid notice, Books Bunny will review the complaint and, where appropriate, remove or disable access to allegedly infringing material in accordance with applicable law.</p>
+
+  {% when 'faq', 'faqs' %}
+    <h2>Books Bunny – Frequently Asked Questions</h2>
+    <h3>1. What is Books Bunny?</h3>
+    <p>Books Bunny is an online bookstore that brings together books from a wide range of publishers, offering readers a single destination to discover and buy fiction, non-fiction, children's literature, poetry, educational books, and more.</p>
+    <h3>2. What makes Books Bunny different?</h3>
+    <p>Books Bunny is a multi-publisher marketplace, not tied to a single publishing house. This means a broader catalogue, more choice, and the convenience of ordering titles from different publishers in one order.</p>
+    <h3>3. What kind of books do you sell?</h3>
+    <p>We offer books across genres and publishers, including fiction, non-fiction, children's literature, poetry, educational books, and socially relevant titles for young adults and general readers.</p>
+    <h3>4. Do you publish books yourselves?</h3>
+    <p>No. Books Bunny is a bookstore, not a publisher. We sell books on behalf of the publishers and authors who hold the rights to them.</p>
+    <h3>5. Do you accept bulk or institutional orders?</h3>
+    <p>Yes. We accept bulk orders for schools, libraries, and organisations. Contact <a href="mailto:sales@unboundscript.com">sales@unboundscript.com</a> for special pricing and details.</p>
+    <h3>6. Can publishers list their books on Books Bunny?</h3>
+    <p>Yes. Publishers who would like their titles listed can reach out through our contact page to discuss onboarding.</p>
+    <h3>7. What is your return policy?</h3>
+    <p>We accept returns when a product is damaged, defective, or incorrect at delivery. Customers should raise a request within 3–5 days of receiving the order.</p>
+    <h3>8. Do you offer refunds?</h3>
+    <p>Approved refunds are issued to the original payment method once the returned product is verified.</p>
+    <h3>9. Can I cancel my order?</h3>
+    <p>Orders can be cancelled only before dispatch. Once dispatched, cancellation is not possible, though return eligibility may still apply.</p>
+    <h3>10. What if I receive a damaged or incorrect book?</h3>
+    <p>Contact support immediately with order details and clear images of the issue. We will review and arrange replacement or refund as appropriate.</p>
+    <h3>11. Are shipping charges refundable?</h3>
+    <p>Shipping charges are generally non-refundable unless the return is due to our error, such as wrong or defective product shipment.</p>
+    <h3>12. What happens if there is a copyright dispute?</h3>
+    <p>Books remain the intellectual property of their respective publishers and authors. Content disputes are reviewed according to applicable laws and our Copyright Policy.</p>
+    <h3>13. Do you have a privacy policy?</h3>
+    <p>Yes. Please refer to our Privacy Policy for details on how customer data is collected, used, and safeguarded.</p>
+{% endcase %}

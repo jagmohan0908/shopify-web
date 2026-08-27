@@ -1,0 +1,92 @@
+{% liquid
+  assign product_resource = closest.product
+  assign publisher = product_resource.metafields.custom.publisher_name.value | default: product_resource.vendor
+  assign encoded_publisher = publisher | url_encode
+  assign publisher_vendor_url = routes.collections_url | append: '/vendors?q=' | append: encoded_publisher
+  assign edition = product_resource.metafields.custom.bookedition.value | default: product_resource.metafields.custom.edition.value
+  assign isbn = product_resource.metafields.custom.isbn_number.value | default: product_resource.metafields.custom.isbn.value | default: product_resource.selected_or_first_available_variant.sku
+  assign year = product_resource.metafields.custom.publication_year.value | default: product_resource.metafields.custom.year.value
+  assign format = product_resource.metafields.custom.format.value
+  assign pages = product_resource.metafields.custom.page_count.value | default: product_resource.metafields.custom.pages.value
+  assign language = product_resource.metafields.custom.language.value
+%}
+
+<div class="bs-book-details">
+  {% if block.settings.show_title %}<h3>{{ block.settings.title }}</h3>{% endif %}
+  <dl>
+    {% if publisher != blank %}
+      <div>
+        <dt>Publisher</dt>
+        <dd>
+          <a href="{{ publisher_vendor_url }}">{{ publisher }}</a>
+        </dd>
+      </div>
+    {% endif %}
+    {% if edition != blank %}<div><dt>Edition</dt><dd>{{ edition }}</dd></div>{% endif %}
+    {% if isbn != blank %}<div><dt>ISBN</dt><dd>{{ isbn }}</dd></div>{% endif %}
+    {% if year != blank %}<div><dt>Year</dt><dd>{{ year }}</dd></div>{% endif %}
+    {% if format != blank %}<div><dt>Format</dt><dd>{{ format }}</dd></div>{% endif %}
+    {% if pages != blank %}<div><dt>Pages</dt><dd>{{ pages }}</dd></div>{% endif %}
+    {% if language != blank %}<div><dt>Language</dt><dd>{{ language }}</dd></div>{% endif %}
+  </dl>
+</div>
+
+{% stylesheet %}
+  .bs-book-details {
+    padding: 22px;
+    border: 1px solid #e6e6e6;
+    border-radius: 8px;
+    background: #fff;
+  }
+
+  .bs-book-details h3 {
+    margin: 0 0 14px;
+    color: #000;
+    font-size: 1.2rem;
+  }
+
+  .bs-book-details dl {
+    display: grid;
+    margin: 0;
+  }
+
+  .bs-book-details div {
+    display: grid;
+    grid-template-columns: 0.85fr 1.15fr;
+    gap: 12px;
+    padding: 10px 0;
+    border-top: 1px solid #e6e6e6;
+  }
+
+  .bs-book-details dt {
+    color: #000;
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  .bs-book-details dd {
+    margin: 0;
+    color: #333;
+    font-size: 0.85rem;
+  }
+
+  .bs-book-details a {
+    color: #b6191a;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Book details table",
+  "settings": [
+    { "type": "checkbox", "id": "show_title", "label": "Show title", "default": true },
+    { "type": "text", "id": "title", "label": "Title", "default": "Book Details" }
+  ],
+  "presets": [
+    { "name": "Book details table" }
+  ]
+}
+{% endschema %}

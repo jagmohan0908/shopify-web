@@ -1,0 +1,125 @@
+{% liquid
+  assign current_vendor_filter = request.params.collection_search | default: request.params['filter.p.vendor']
+  assign collection_vendor_pic = blank
+  if collection.handle == 'vendors'
+    paginate collection.products by 250
+      for vendor_product in collection.products
+        assign vendor_pic_file = vendor_product.metafields.custom.vendor_pic.value
+        if vendor_pic_file != blank
+          if vendor_pic_file.preview_image != blank
+            assign collection_vendor_pic = vendor_pic_file.preview_image
+          elsif vendor_pic_file.image != blank
+            assign collection_vendor_pic = vendor_pic_file.image
+          else
+            assign collection_vendor_pic = vendor_pic_file
+          endif
+          break
+        endif
+      endfor
+    endpaginate
+  endif
+%}
+
+<div
+  class="bookstore-shell bookstore-category"
+  style="
+    --bs-cat-bg: {{ section.settings.background_color }};
+    --bs-cat-card: {{ section.settings.card_background }};
+    --bs-cat-ink: {{ section.settings.heading_color }};
+    --bs-cat-text: {{ section.settings.text_color }};
+    --bs-cat-accent: {{ section.settings.accent_color }};
+    --bs-cat-line: {{ section.settings.border_color }};
+  "
+>
+  <section class="bookstore-collection-hero bookstore-category-hero">
+    <div class="bookstore-container">
+      <nav class="bookstore-category-breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ routes.root_url }}">Home</a> / <span>{{ collection.title | default: 'Books' }}</span>
+      </nav>
+      {% if collection_vendor_pic != blank %}
+        <div class="bookstore-category-vendor-image">
+          {{ collection_vendor_pic | image_url: width: 240 | image_tag: loading: 'lazy', alt: collection.title }}
+        </div>
+      {% endif %}
+      <div class="bookstore-eyebrow">{{ section.settings.eyebrow }}</div>
+      <h1 class="bookstore-heading">{{ collection.title | default: section.settings.fallback_title }}</h1>
+      {% if collection.description != blank %}
+        <div class="bookstore-copy bookstore-category-description">{{ collection.description }}</div>
+      {% else %}
+        <p class="bookstore-copy bookstore-category-description">
+          Browse {{ collection.products_count }} available titles. Search or use the filters below to narrow the catalogue.
+        </p>
+      {% endif %}
+
+      <div class="bookstore-category-meta">
+        <span><span data-bookstore-visible-count data-bookstore-total-count="{{ collection.products_count }}">{{ collection.products_count }}</span> titles</span>
+      </div>
+
+      {% if section.settings.show_search %}
+        <form
+          class="bookstore-search bookstore-category-search"
+          action="{{ request.path }}"
+          method="get"
+          role="search"
+          data-bookstore-collection-search
+          data-bookstore-collection-handle="{{ collection.handle }}"
+        >
+          {% if collection.handle == 'vendors' and collection.title != blank %}
+            <input type="hidden" name="q" value="{{ collection.title | escape }}">
+          {% elsif request.params.q != blank %}
+            <input type="hidden" name="q" value="{{ request.params.q | escape }}">
+          {% endif %}
+          <input
+            name="collection_search"
+            type="search"
+            value="{{ request.params.collection_search | escape }}"
+            placeholder="{{ section.settings.search_placeholder }}"
+            aria-label="Search books in this collection"
+            data-bookstore-collection-search-input
+          >
+          <button class="bookstore-search__button" type="submit">{{ section.settings.search_button }}</button>
+        </form>
+      {% endif %}
+
+      {% if section.settings.show_publishers and collection.all_vendors.size > 0 %}
+        <div class="bookstore-filter-note bookstore-category-publishers" aria-label="Browse publishers">
+          {% for vendor in collection.all_vendors limit: section.settings.publisher_limit %}
+            {% assign encoded_vendor = vendor | url_encode %}
+            {% assign vendor_filter_url = collection.url | append: '?collection_search=' | append: encoded_vendor %}
+            <a
+              href="{{ vendor_filter_url }}"
+              {% if current_vendor_filter == vendor %}aria-current="page"{% endif %}
+            >
+              {{ vendor }}
+            </a>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </section>
+</div>
+
+{% schema %}
+{
+  "name": "Book collection header",
+  "enabled_on": { "templates": ["collection"] },
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Curated collection" },
+    { "type": "text", "id": "fallback_title", "label": "Fallback title", "default": "All Books" },
+    { "type": "checkbox", "id": "show_search", "label": "Show search bar", "default": true },
+    { "type": "text", "id": "search_placeholder", "label": "Search placeholder", "default": "Search title, author, publisher or ISBN" },
+    { "type": "text", "id": "search_button", "label": "Search button label", "default": "Search" },
+    { "type": "checkbox", "id": "show_publishers", "label": "Show publisher chips", "default": true },
+    { "type": "range", "id": "publisher_limit", "label": "Publisher chip limit", "min": 4, "max": 16, "step": 1, "default": 8 },
+    { "type": "color", "id": "background_color", "label": "Background", "default": "#eff4ff" },
+    { "type": "color", "id": "card_background", "label": "Search background", "default": "#ffffff" },
+    { "type": "color", "id": "heading_color", "label": "Heading color", "default": "#0d1c2f" },
+    { "type": "color", "id": "text_color", "label": "Text color", "default": "#45464d" },
+    { "type": "color", "id": "accent_color", "label": "Accent color", "default": "#b6191a" },
+    { "type": "color", "id": "border_color", "label": "Border color", "default": "#c6c6cd" }
+  ],
+  "presets": [
+    { "name": "Bookstore collection header" }
+  ]
+}
+{% endschema %}

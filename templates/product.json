@@ -1,0 +1,627 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "main": {
+      "type": "product-information",
+      "blocks": {
+        "media-gallery": {
+          "type": "_product-media-gallery",
+          "static": true,
+          "settings": {
+            "media_presentation": "carousel",
+            "media_columns": "two",
+            "image_gap": 4,
+            "large_first_image": true,
+            "icons_style": "arrows_large",
+            "slideshow_controls_style": "thumbnails",
+            "slideshow_mobile_controls_style": "thumbnails",
+            "thumbnail_position": "bottom",
+            "thumbnail_width": 44,
+            "thumbnail_radius": 0,
+            "aspect_ratio": "adapt",
+            "constrain_to_viewport": true,
+            "media_fit": "contain",
+            "media_radius": 10,
+            "extend_media": false,
+            "zoom": true,
+            "video_loop": false,
+            "hide_variants": true,
+            "padding-block-start": 20,
+            "padding-block-end": 30,
+            "padding-inline-start": 10,
+            "padding-inline-end": 10
+          },
+          "blocks": {}
+        },
+        "product-details": {
+          "type": "_product-details",
+          "static": true,
+          "settings": {
+            "width": "fill",
+            "custom_width": 100,
+            "width_mobile": "fill",
+            "custom_width_mobile": 100,
+            "height": "fit",
+            "details_position": "flex-start",
+            "gap": 24,
+            "sticky_details_desktop": true,
+            "background_media": "none",
+            "background_color": "",
+            "video_position": "cover",
+            "background_image_position": "cover",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_color": "",
+            "border_radius": 0,
+            "padding-block-start": 24,
+            "padding-block-end": 24,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {
+            "group_header": {
+              "type": "group",
+              "name": "Header",
+              "settings": {
+                "content_direction": "column",
+                "vertical_on_mobile": true,
+                "horizontal_alignment": "flex-start",
+                "vertical_alignment": "center",
+                "align_baseline": false,
+                "horizontal_alignment_flex_direction_column": "flex-start",
+                "vertical_alignment_flex_direction_column": "center",
+                "gap": 10,
+                "width": "fill",
+                "custom_width": 100,
+                "width_mobile": "fill",
+                "custom_width_mobile": 100,
+                "height": "fit",
+                "custom_height": 100,
+                "background_media": "none",
+                "background_color": "",
+                "video_position": "cover",
+                "background_image_position": "cover",
+                "toggle_overlay": false,
+                "overlay_color": "#00000026",
+                "overlay_style": "solid",
+                "gradient_direction": "to top",
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_color": "",
+                "border_radius": 0,
+                "link": "",
+                "open_in_new_tab": false,
+                "placeholder": "",
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {
+                "product_title": {
+                  "type": "text",
+                  "name": "Product title",
+                  "settings": {
+                    "text": "<h2>{{ closest.product.title }}</h2>",
+                    "width": "100%",
+                    "max_width": "normal",
+                    "alignment": "left",
+                    "type_preset": "h3",
+                    "font": "var(--font-primary--family)",
+                    "font_size": "1rem",
+                    "line_height": "normal",
+                    "letter_spacing": "normal",
+                    "case": "none",
+                    "wrap": "pretty",
+                    "text_color": "",
+                    "background": false,
+                    "background_color": "#00000026",
+                    "corner_radius": 0,
+                    "padding-block-start": 0,
+                    "padding-block-end": 0,
+                    "padding-inline-start": 0,
+                    "padding-inline-end": 0
+                  },
+                  "blocks": {}
+                },
+                "author_line": {
+                  "type": "bookstore-author-line",
+                  "settings": {
+                    "prefix": "By",
+                    "publisher_prefix": "Publisher",
+                    "author_name": "",
+                    "separator": "and",
+                    "text_color": "#4c7b40"
+                  },
+                  "blocks": {}
+                },
+                "price": {
+                  "type": "price",
+                  "settings": {
+                    "show_sale_price_first": true,
+                    "show_installments": false,
+                    "show_tax_info": false,
+                    "type_preset": "h5",
+                    "width": "100%",
+                    "alignment": "left",
+                    "font": "var(--font-body--family)",
+                    "font_size": "1rem",
+                    "line_height": "normal",
+                    "letter_spacing": "normal",
+                    "case": "none",
+                    "text_color": "",
+                    "padding-block-start": 4,
+                    "padding-block-end": 0,
+                    "padding-inline-start": 0,
+                    "padding-inline-end": 0
+                  },
+                  "blocks": {}
+                }
+              },
+              "block_order": [
+                "product_title",
+                "author_line",
+                "price"
+              ]
+            },
+            "divider_top": {
+              "type": "_divider",
+              "name": "Divider",
+              "settings": {
+                "thickness": 1,
+                "corner_radius": "square",
+                "divider_color": "{{ settings.color_palette.color2 }}",
+                "width_percent": 100,
+                "padding-block-start": 0,
+                "padding-block-end": 0
+              },
+              "blocks": {}
+            },
+            "inventory": {
+              "type": "bookstore-inventory-pill",
+              "settings": {
+                "show_icon": true,
+                "in_stock_text": "In Stock",
+                "out_of_stock_text": "Out of Stock"
+              },
+              "blocks": {}
+            },
+            "offer_details": {
+              "type": "bookstore-offer-details",
+              "settings": {
+                "show_offer": true,
+                "heading": "Available offers",
+                "offer_1": "Free shipping on prepaid orders above ₹499.",
+                "offer_2": "Extra 5% off on selected publisher bundles.",
+                "offer_3": "",
+                "background_color": "#fff7f3",
+                "border_color": "#ffd6d6",
+                "accent_color": "#b6191a"
+              },
+              "blocks": {}
+            },
+            "description": {
+              "type": "text",
+              "name": "Product description",
+              "settings": {
+                "text": "{{ closest.product.description }}",
+                "width": "100%",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "rte",
+                "font": "var(--font-primary--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "wrap": "pretty",
+                "text_color": "",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "variant_picker": {
+              "type": "variant-picker",
+              "settings": {
+                "variant_style": "buttons",
+                "show_swatches": false,
+                "option_label_text_color": "",
+                "variant_style_class": "default",
+                "custom_variant_background": "{{ settings.color_palette.background }}",
+                "custom_variant_text": "{{ settings.color_palette.foreground }}",
+                "custom_variant_border": "{{ settings.color_palette.foreground }}",
+                "selected_variant_style_class": "default",
+                "custom_selected_variant_background": "{{ settings.color_palette.foreground }}",
+                "custom_selected_variant_text": "{{ settings.color_palette.background }}",
+                "custom_selected_variant_border": "{{ settings.color_palette.foreground }}",
+                "alignment": "left",
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "buy_buttons": {
+              "type": "buy-buttons",
+              "settings": {
+                "stacking": true,
+                "text_color": "",
+                "show_pickup_availability": false,
+                "gift_card_form": true,
+                "recipient_button_style": "default",
+                "recipient_button_background": "{{ settings.color_palette.background }}",
+                "recipient_button_text": "{{ settings.color_palette.foreground }}",
+                "recipient_button_border": "{{ settings.color_palette.foreground }}",
+                "selected_recipient_button_style": "default",
+                "selected_recipient_button_background": "{{ settings.color_palette.foreground }}",
+                "selected_recipient_button_text": "{{ settings.color_palette.background }}",
+                "selected_recipient_button_border": "{{ settings.color_palette.foreground }}",
+                "input_style": "default",
+                "input_background_color": "{{ settings.color_palette.background }}",
+                "input_text_color": "{{ settings.color_palette.foreground }}",
+                "input_border_color": "{{ settings.color_palette.foreground }}",
+                "border_width": 1,
+                "border_radius": 12,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {
+                "quantity": {
+                  "type": "quantity",
+                  "static": true,
+                  "settings": {
+                    "input_style": "default",
+                    "input_background_color": "{{ settings.color_palette.background }}",
+                    "input_text_color": "{{ settings.color_palette.foreground }}",
+                    "input_border_color": "{{ settings.color_palette.foreground }}",
+                    "border_width": 1,
+                    "border_radius": 12
+                  },
+                  "blocks": {}
+                },
+                "add-to-cart": {
+                  "type": "add-to-cart",
+                  "static": true,
+                  "settings": {
+                    "style_class": "button-secondary",
+                    "custom_button_background": "{{ settings.color_palette.foreground }}",
+                    "custom_button_text": "{{ settings.color_palette.background }}",
+                    "custom_button_border": "{{ settings.color_palette.foreground }}"
+                  },
+                  "blocks": {}
+                },
+                "accelerated-checkout": {
+                  "type": "accelerated-checkout",
+                  "static": true,
+                  "settings": {},
+                  "blocks": {}
+                }
+              },
+              "block_order": []
+            },
+            "delivery_check": {
+              "type": "bookstore-delivery-check",
+              "settings": {
+                "heading": "Check delivery availability",
+                "placeholder": "Enter pincode",
+                "button_text": "Check",
+                "success_message": "You can get your product within 4-7 days when you order today.",
+                "error_message": "Please enter a valid 6-digit Indian pincode."
+              },
+              "blocks": {}
+            },
+            "book_details": {
+              "type": "bookstore-book-details",
+              "settings": {
+                "show_title": true,
+                "title": "Book Details"
+              },
+              "blocks": {}
+            }
+          },
+          "block_order": [
+            "group_header",
+            "divider_top",
+            "inventory",
+            "offer_details",
+            "description",
+            "variant_picker",
+            "buy_buttons",
+            "delivery_check",
+            "book_details"
+          ]
+        }
+      },
+      "settings": {
+        "content_width": "content-center-aligned",
+        "desktop_media_position": "left",
+        "equal_columns": true,
+        "limit_details_width": false,
+        "gap": 48,
+        "enable_sticky_add_to_cart": true,
+        "background_color": "{{ settings.color_palette.background }}",
+        "padding-block-start": 0,
+        "padding-block-end": 24
+      }
+    },
+    "trust_promises": {
+      "type": "trust-promises",
+      "blocks": {
+        "promise_1": {
+          "type": "promise",
+          "settings": {
+            "icon_text": "1",
+            "heading": "100% Original Books",
+            "text": "Every title is sourced from trusted publishers."
+          }
+        },
+        "promise_2": {
+          "type": "promise",
+          "settings": {
+            "icon_text": "2",
+            "heading": "Secure Checkout",
+            "text": "Safe payment and protected order processing."
+          }
+        },
+        "promise_3": {
+          "type": "promise",
+          "settings": {
+            "icon_text": "3",
+            "heading": "Fast Delivery",
+            "text": "Reliable shipping across India with order updates."
+          }
+        },
+        "promise_4": {
+          "type": "promise",
+          "settings": {
+            "icon_text": "4",
+            "heading": "Reader Support",
+            "text": "Helpful support for book queries and order assistance."
+          }
+        }
+      },
+      "block_order": [
+        "promise_1",
+        "promise_2",
+        "promise_3",
+        "promise_4"
+      ],
+      "settings": {
+        "heading": "Product page promises",
+        "color_theme": "custom",
+        "background_color": "#eff4ff",
+        "heading_color": "#0d1c2f",
+        "text_color": "#45464d",
+        "accent_color": "#6683b3",
+        "card_background": "#ffffff"
+      }
+    },
+    "more_by_author": {
+      "type": "bookstore-product-author-shelf",
+      "settings": {
+        "kicker": "More by this author",
+        "heading": "",
+        "collection": "",
+        "product_limit": 6
+      }
+    },
+    "product_reviews": {
+      "type": "bookstore-product-reviews",
+      "blocks": {
+        "highlight_1": {
+          "type": "highlight",
+          "settings": {
+            "label": "Reader photo"
+          }
+        },
+        "review_1": {
+          "type": "review",
+          "settings": {
+            "author": "Aarav S.",
+            "title": "Great reading experience",
+            "text": "The book arrived in good condition and the shopping experience was smooth.",
+            "verified": true
+          }
+        },
+        "review_2": {
+          "type": "review",
+          "settings": {
+            "author": "Meera K.",
+            "title": "Original copy and fast delivery",
+            "text": "Loved the packaging and the book quality. Will order again.",
+            "verified": true
+          }
+        },
+        "review_3": {
+          "type": "review",
+          "settings": {
+            "author": "Reader",
+            "title": "Helpful bookstore",
+            "text": "Easy to discover books from different publishers in one place.",
+            "verified": false
+          }
+        }
+      },
+      "block_order": [
+        "highlight_1",
+        "review_1",
+        "review_2",
+        "review_3"
+      ],
+      "settings": {
+        "heading": "Reviews",
+        "summary_text": "Reader ratings and photo reviews",
+        "button_label": "Write a review",
+        "button_link": "#shopify-product-reviews"
+      }
+    },
+    "product_recommendations": {
+      "type": "product-recommendations",
+      "blocks": {
+        "text_heading": {
+          "type": "text",
+          "name": "Header",
+          "settings": {
+            "text": "<h3>You may also like</h3>",
+            "width": "fit-content",
+            "max_width": "normal",
+            "alignment": "left",
+            "type_preset": "h4",
+            "font": "var(--font-primary--family)",
+            "font_size": "1rem",
+            "line_height": "normal",
+            "letter_spacing": "normal",
+            "case": "none",
+            "wrap": "pretty",
+            "text_color": "",
+            "background": false,
+            "background_color": "#00000026",
+            "corner_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
+        },
+        "static-product-card": {
+          "type": "_product-card",
+          "name": "Product card",
+          "static": true,
+          "settings": {
+            "product_card_gap": 8,
+            "background_color": "",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_color": "",
+            "border_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 8,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {
+            "product_card_gallery": {
+              "type": "_product-card-gallery",
+              "name": "Product card media",
+              "settings": {
+                "image_ratio": "adapt",
+                "border": "solid",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_color": "#e2e8f0",
+                "border_radius": 4,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "product_title": {
+              "type": "product-title",
+              "name": "Product title",
+              "settings": {
+                "width": "100%",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "rte",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "wrap": "pretty",
+                "text_color": "",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 4,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "price": {
+              "type": "price",
+              "settings": {
+                "show_sale_price_first": true,
+                "show_installments": false,
+                "show_tax_info": false,
+                "type_preset": "h6",
+                "width": "100%",
+                "alignment": "left",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "text_color": "",
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            }
+          },
+          "block_order": [
+            "product_card_gallery",
+            "product_title",
+            "price"
+          ]
+        }
+      },
+      "block_order": [
+        "text_heading"
+      ],
+      "name": "Product recommendations",
+      "settings": {
+        "product": "{{ closest.product }}",
+        "recommendation_type": "related",
+        "layout_type": "grid",
+        "carousel_on_mobile": false,
+        "max_products": 6,
+        "columns": 6,
+        "mobile_columns": "2",
+        "columns_gap": 12,
+        "rows_gap": 24,
+        "icons_style": "arrow",
+        "icons_shape": "none",
+        "section_width": "page-width",
+        "gap": 28,
+        "background_color": "{{ settings.color_palette.background }}",
+        "padding-block-start": 20,
+        "padding-block-end": 40
+      }
+    }
+  },
+  "order": [
+    "main",
+    "trust_promises",
+    "more_by_author",
+    "product_reviews",
+    "product_recommendations"
+  ]
+}

@@ -1,0 +1,212 @@
+{%- liquid
+  assign filter_style = filter_style | default: 'vertical'
+  assign is_vertical = false
+  if filter_style == 'vertical'
+    assign is_vertical = true
+  endif
+
+  assign current_author = request.params['author'] | default: request.params['filter.p.m.custom.author'] | strip
+  assign current_publisher = request.params['filter.p.vendor'] | strip
+  assign current_collection_search = request.params['collection_search'] | strip
+  assign current_sort_by = request.params['sort_by'] | strip
+
+  if current_publisher == blank and template.name == 'collection'
+    assign collection_url_check = collection.url | default: ''
+    if collection.handle == 'vendors' or collection_url_check contains '/collections/vendors'
+      assign current_publisher = collection.current_vendor | default: request.params['q'] | strip
+    endif
+  endif
+
+  if current_author == blank and filters != blank
+    for filter in filters
+      assign filter_label_downcase = filter.label | downcase
+      if filter.param_name contains 'author' or filter_label_downcase contains 'author'
+        if filter.active_values.size > 0
+          assign current_author = filter.active_values.first.value | default: filter.active_values.first.label | strip
+        endif
+        break
+      endif
+    endfor
+  endif
+
+  if current_publisher == blank and filters != blank
+    for filter in filters
+      assign filter_label_downcase = filter.label | downcase
+      if filter.param_name contains 'vendor' or filter_label_downcase contains 'publisher'
+        if filter.active_values.size > 0
+          assign current_publisher = filter.active_values.first.value | default: filter.active_values.first.label | strip
+        endif
+        break
+      endif
+    endfor
+  endif
+
+  assign has_preserved_query = false
+  capture preserved_query
+    if current_author != blank and current_author != '*'
+      assign encoded_current_author = current_author | url_encode
+      if has_preserved_query
+        echo '&'
+      endif
+      echo 'filter.p.m.custom.author=' | append: encoded_current_author
+      assign has_preserved_query = true
+    endif
+
+    if current_author != blank and current_author != '*'
+      assign encoded_current_author = current_author | url_encode
+      if has_preserved_query
+        echo '&'
+      endif
+      echo 'author=' | append: encoded_current_author
+      assign has_preserved_query = true
+    endif
+
+    if current_publisher != blank and current_publisher != '*'
+      assign encoded_current_publisher = current_publisher | url_encode
+      if has_preserved_query
+        echo '&'
+      endif
+      echo 'filter.p.vendor=' | append: encoded_current_publisher
+      assign has_preserved_query = true
+    endif
+
+    if current_collection_search != blank
+      assign encoded_collection_search = current_collection_search | url_encode
+      if has_preserved_query
+        echo '&'
+      endif
+      echo 'collection_search=' | append: encoded_collection_search
+      assign has_preserved_query = true
+    endif
+
+    if current_sort_by != blank
+      assign encoded_sort_by = current_sort_by | url_encode
+      if has_preserved_query
+        echo '&'
+      endif
+      echo 'sort_by=' | append: encoded_sort_by
+      assign has_preserved_query = true
+    endif
+
+    if filters != blank
+      for filter in filters
+        assign filter_label_downcase = filter.label | downcase
+        assign should_skip_filter = false
+        if filter.param_name contains 'vendor' or filter.param_name contains 'author'
+          assign should_skip_filter = true
+        endif
+        if filter_label_downcase == 'category'
+          assign should_skip_filter = true
+        endif
+        if filter.param_name contains 'product_type' or filter.param_name contains 'custom.categories' or filter.param_name contains 'tag'
+          assign should_skip_filter = true
+        endif
+
+        unless should_skip_filter
+          if filter.type == 'price_range'
+            if filter.min_value.value != null
+              assign min_price_value = filter.min_value.value | money_without_currency
+              assign encoded_min_price_value = min_price_value | url_encode
+              if has_preserved_query
+                echo '&'
+              endif
+              echo filter.min_value.param_name | append: '=' | append: encoded_min_price_value
+              assign has_preserved_query = true
+            endif
+            if filter.max_value.value != null
+              assign max_price_value = filter.max_value.value | money_without_currency
+              assign encoded_max_price_value = max_price_value | url_encode
+              if has_preserved_query
+                echo '&'
+              endif
+              echo filter.max_value.param_name | append: '=' | append: encoded_max_price_value
+              assign has_preserved_query = true
+            endif
+          else
+            for value in filter.active_values
+              assign encoded_value = value.value | url_encode
+              if has_preserved_query
+                echo '&'
+              endif
+              echo value.param_name | append: '=' | append: encoded_value
+              assign has_preserved_query = true
+            endfor
+          endif
+        endunless
+      endfor
+    endif
+  endcapture
+
+  assign preserved_query = preserved_query | strip
+  assign query_suffix = ''
+  if preserved_query != blank
+    assign query_suffix = '?' | append: preserved_query
+  endif
+-%}
+
+<details
+  class="facets__panel bookstore-collection-facet"
+  {% if filter_style == 'horizontal' %}
+    data-auto-close-details="desktop"
+  {% endif %}
+  {% if is_vertical or in_drawer %}
+    open
+  {% endif %}
+>
+  <summary class="facets__summary">
+    <span class="facets__label">Category</span>
+    <div class="facets__status-wrapper">
+      <span class="facets__status h6 desktop:hidden">
+        {% if collection.handle == 'all' %}All Books{% else %}{{ collection.title }}{% endif %}
+      </span>
+      <span class="svg-wrapper icon-caret icon-animated">{{- 'icon-caret.svg' | inline_asset_content -}}</span>
+    </div>
+  </summary>
+
+  <div class="facets__inputs-wrapper bookstore-collection-facet__inputs">
+    <ul class="facets__inputs-list bookstore-collection-facet__list" role="list">
+      <li class="facets__inputs-list-item">
+        <a
+          href="{{ routes.collections_url }}/all{{ query_suffix }}"
+          class="bookstore-collection-facet__link{% if collection.handle == 'all' %} is-active{% endif %}"
+          {% if collection.handle == 'all' %}aria-current="page"{% endif %}
+        >
+          <span aria-hidden="true"></span>
+          <span>All Books</span>
+        </a>
+      </li>
+
+      {% assign rendered_collection_count = 0 %}
+      {% for category_collection in collections %}
+        {% liquid
+          assign category_handle = category_collection.handle
+          assign should_skip_collection = false
+          if category_handle == blank or category_handle == 'all' or category_handle == 'frontpage'
+            assign should_skip_collection = true
+          endif
+          if category_collection.products_count == 0
+            assign should_skip_collection = true
+          endif
+        %}
+
+        {% unless should_skip_collection %}
+          {% assign rendered_collection_count = rendered_collection_count | plus: 1 %}
+          <li class="facets__inputs-list-item">
+            <a
+              href="{{ category_collection.url }}{{ query_suffix }}"
+              class="bookstore-collection-facet__link{% if collection.handle == category_handle %} is-active{% endif %}"
+              {% if collection.handle == category_handle %}aria-current="page"{% endif %}
+            >
+              <span aria-hidden="true"></span>
+              <span>{{ category_collection.title }}</span>
+            </a>
+          </li>
+        {% endunless %}
+      {% endfor %}
+    </ul>
+
+    {% if rendered_collection_count == 0 %}
+      <p class="bookstore-collection-facet__empty">Collections will appear here after they are published.</p>
+    {% endif %}
+  </div>
+</details>

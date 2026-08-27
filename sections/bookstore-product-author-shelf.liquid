@@ -1,0 +1,201 @@
+{% liquid
+  assign book_author = product.metafields.custom.author.value | default: product.metafields.custom.author | default: product.metafields.custom.author_name_and_about.value | default: product.metafields.book.author.value | strip
+  assign book_author_handle = book_author | handleize
+  assign source_collection = section.settings.collection | default: product.collections.first | default: collections.all
+  assign shown_count = 0
+  assign product_limit = section.settings.product_limit | default: 6
+%}
+
+{% capture author_books %}
+    {% for related_product in source_collection.products %}
+      {% liquid
+        assign related_author = related_product.metafields.custom.author.value | default: related_product.metafields.custom.author | default: related_product.metafields.custom.author_name_and_about.value | default: related_product.metafields.book.author.value | strip
+        assign related_author_handle = related_author | handleize
+      %}
+      {% if related_product.id != product.id and related_author_handle == book_author_handle and shown_count < product_limit %}
+        {% assign shown_count = shown_count | plus: 1 %}
+        {% render 'stitch-book-card', product: related_product, section_id: section.id, compact: true %}
+      {% endif %}
+    {% endfor %}
+
+    {% if shown_count == 0 and source_collection.handle != 'all' %}
+      {% for related_product in collections.all.products %}
+        {% liquid
+          assign related_author = related_product.metafields.custom.author.value | default: related_product.metafields.custom.author | default: related_product.metafields.custom.author_name_and_about.value | default: related_product.metafields.book.author.value | strip
+          assign related_author_handle = related_author | handleize
+        %}
+        {% if related_product.id != product.id and related_author_handle == book_author_handle and shown_count < product_limit %}
+          {% assign shown_count = shown_count | plus: 1 %}
+          {% render 'stitch-book-card', product: related_product, section_id: section.id, compact: true %}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+{% endcapture %}
+
+{% if book_author != blank %}
+  <section
+    class="sb-product-section sb-product-container sb-author-shelf"
+    data-author-product-shelf
+    data-author="{{ book_author | escape }}"
+    data-product-id="{{ product.id }}"
+    data-product-handle="{{ product.handle | escape }}"
+    data-limit="{{ product_limit }}"
+    data-endpoint="{{ routes.search_url }}?view=author-products&amp;type=product&amp;q=*&amp;filter.p.m.custom.author={{ book_author | url_encode }}"
+  >
+    {% if section.settings.kicker != blank %}<p class="sb-product-section__kicker">{{ section.settings.kicker }}</p>{% endif %}
+    <div class="sb-author-shelf__head">
+      <h2>{{ section.settings.heading | default: book_author }}</h2>
+      <a href="{{ routes.search_url }}?view=author&amp;type=product&amp;q=*&amp;filter.p.m.custom.author={{ book_author | url_encode }}&amp;author={{ book_author | url_encode }}">View all</a>
+    </div>
+
+    <div class="sb-product-book-row sb-product-book-row--author" data-author-product-grid>
+      {{ author_books }}
+    </div>
+
+    <p class="sb-author-shelf__status" data-author-product-status hidden></p>
+  </section>
+
+  <script>
+    (() => {
+      const shelf = document.currentScript.previousElementSibling;
+      if (!shelf?.matches('[data-author-product-shelf]')) return;
+
+      const grid = shelf.querySelector('[data-author-product-grid]');
+      const status = shelf.querySelector('[data-author-product-status]');
+      const author = shelf.dataset.author || '';
+      const endpoint = shelf.dataset.endpoint || '';
+      const productId = shelf.dataset.productId || '';
+      const productHandle = shelf.dataset.productHandle || '';
+      const limit = Number(shelf.dataset.limit || 6);
+      const seenIds = new Set(
+        Array.from(grid?.querySelectorAll('[data-product-id], .sb-book-card') || [])
+          .map((item) => item.dataset.productId)
+          .filter(Boolean)
+      );
+
+      if (!grid || !author || !endpoint) return;
+
+      const escapeHtml = (value) =>
+        String(value || '').replace(/[&<>"']/g, (char) => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;',
+        })[char]);
+
+      const normalizeAuthor = (value) =>
+        String(value || '')
+          .toLowerCase()
+          .normalize('NFKD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9\u0900-\u097f]+/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+      const expectedAuthor = normalizeAuthor(author);
+
+      const renderCard = (item) => {
+        if (!item?.id || seenIds.has(String(item.id)) || grid.children.length >= limit) return;
+        if (normalizeAuthor(item.author) !== expectedAuthor) return;
+        seenIds.add(String(item.id));
+
+        const article = document.createElement('article');
+        article.className = 'sb-book-card sb-book-card--compact sb-author-shelf-card';
+        article.dataset.productId = String(item.id);
+
+        const imageMarkup = item.image
+          ? `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" loading="lazy">`
+          : `<span>${escapeHtml(String(item.title || '').slice(0, 1) || 'B')}</span>`;
+
+        const compareMarkup = item.compare_at_price ? `<s>${escapeHtml(item.compare_at_price)}</s>` : '';
+
+        article.innerHTML = `
+          <a class="sb-book-card__cover" href="${escapeHtml(item.url)}" aria-label="${escapeHtml(item.title)}">
+            ${imageMarkup}
+          </a>
+          <div class="sb-book-card__body">
+            <p>${escapeHtml(item.author || author)}</p>
+            <h3><a href="${escapeHtml(item.url)}">${escapeHtml(item.title)}</a></h3>
+            <div class="sb-book-card__price">
+              <strong>${escapeHtml(item.price)}</strong>
+              ${compareMarkup}
+            </div>
+          </div>
+          <div class="sb-book-card__overlay">
+            <a href="${escapeHtml(item.url)}">View book</a>
+          </div>
+        `;
+
+        grid.append(article);
+      };
+
+      const formatMoney = (cents) => {
+        const amount = Number(cents || 0) / 100;
+        try {
+          return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: window.Shopify?.currency?.active || 'INR',
+            maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
+          }).format(amount);
+        } catch (error) {
+          return `Rs. ${amount.toFixed(amount % 1 === 0 ? 0 : 2)}`;
+        }
+      };
+
+      const loadEndpoint = async (customEndpoint, extraParams = '') => {
+        let page = 1;
+        let pages = 1;
+
+        while (page <= pages && page <= 6 && grid.children.length < limit) {
+          const separator = customEndpoint.includes('?') ? '&' : '?';
+          const url = `${customEndpoint}${separator}author=${encodeURIComponent(author)}&product_id=${encodeURIComponent(productId)}&page=${page}${extraParams}`;
+          const response = await fetch(url, { headers: { Accept: 'application/json' } });
+          if (!response.ok) break;
+          const payload = await response.json();
+          pages = Number(payload.pages || 1);
+          (payload.products || []).forEach(renderCard);
+          page += 1;
+        }
+      };
+
+      const loadAuthorBooks = async () => {
+        if (grid.children.length >= limit) {
+          if (status) status.hidden = true;
+          return;
+        }
+
+        if (grid.children.length < limit) {
+          await loadEndpoint(endpoint);
+        }
+
+        if (grid.children.length === 0) {
+          shelf.hidden = true;
+        } else if (status) {
+          status.hidden = true;
+        }
+      };
+
+      loadAuthorBooks().catch(() => {
+        if (grid.children.length === 0) shelf.hidden = true;
+        if (status) status.hidden = true;
+      });
+    })();
+  </script>
+{% endif %}
+
+{% schema %}
+{
+  "name": "More by this author",
+  "enabled_on": { "templates": ["product"] },
+  "settings": [
+    { "type": "text", "id": "kicker", "label": "Kicker", "default": "More by this author" },
+    { "type": "text", "id": "heading", "label": "Heading override" },
+    { "type": "collection", "id": "collection", "label": "Fallback/search collection" },
+    { "type": "range", "id": "product_limit", "label": "Products", "min": 2, "max": 6, "step": 1, "default": 6 }
+  ],
+  "presets": [
+    { "name": "More by this author" }
+  ]
+}
+{% endschema %}

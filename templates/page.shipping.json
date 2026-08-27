@@ -1,0 +1,25 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "info": {
+      "type": "bookstore-info-page",
+      "settings": {
+        "eyebrow": "Shipping policy",
+        "heading": "Shipping Policy",
+        "copy": "Domestic and international delivery timelines, charges, tracking, and support.",
+        "default_content": "Shipping policy content is ready from the uploaded file."
+      }
+    }
+  },
+  "order": [
+    "info"
+  ]
+}

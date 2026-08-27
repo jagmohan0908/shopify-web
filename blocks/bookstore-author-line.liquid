@@ -1,0 +1,74 @@
+{% liquid
+  assign product_resource = closest.product
+  assign author_name = block.settings.author_name | default: product_resource.metafields.custom.author.value | default: product_resource.metafields.custom.author_name_and_about.value | default: product_resource.metafields.book.author.value
+  assign author_page = product_resource.metafields.custom.author_page_connect.value
+  assign second_author_page = product_resource.metafields.custom.second_author.value
+  assign publisher_name = product_resource.metafields.custom.publisher_name.value | default: product_resource.vendor
+
+  assign author_handle = author_name | handleize
+  assign fallback_author_page = pages[author_handle]
+  if author_page == blank and fallback_author_page != blank
+    assign author_page = fallback_author_page
+  endif
+  assign encoded_author_name = author_name | url_encode
+  assign author_search_url = routes.search_url | append: '?view=author&type=product&q=*&filter.p.m.custom.author=' | append: encoded_author_name | append: '&author=' | append: encoded_author_name
+  assign encoded_publisher_name = publisher_name | url_encode
+  assign publisher_vendor_url = routes.collections_url | append: '/vendors?q=' | append: encoded_publisher_name
+%}
+
+{% if author_name != blank or author_page != blank or publisher_name != blank %}
+  <div class="bs-product-author-line" style="--bs-author-color: {{ block.settings.text_color }};">
+    {% if author_name != blank or author_page != blank %}
+      <span>{{ block.settings.prefix }}</span>
+      {% if author_page != blank %}
+        <a href="{{ author_page.url }}">{{ author_page.title | default: author_name }}</a>
+      {% elsif author_name != blank %}
+        <a href="{{ author_search_url }}">{{ author_name }}</a>
+      {% endif %}
+    {% endif %}
+    {% if second_author_page != blank %}
+      <span>{{ block.settings.separator }}</span>
+      <a href="{{ second_author_page.url }}">{{ second_author_page.title }}</a>
+    {% endif %}
+    {% if publisher_name != blank %}
+      <span class="bs-product-author-line__dot">•</span>
+      <span>{{ block.settings.publisher_prefix }}</span>
+      <a href="{{ publisher_vendor_url }}">{{ publisher_name }}</a>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% stylesheet %}
+  .bs-product-author-line {
+    color: var(--bs-author-color, #4c7b40);
+    font-size: 0.95rem;
+    line-height: 1.4;
+  }
+
+  .bs-product-author-line__dot {
+    margin-inline: 0.25rem;
+    opacity: 0.45;
+  }
+
+  .bs-product-author-line a,
+  .bs-product-author-line strong {
+    color: inherit;
+    font-weight: 700;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Book author line",
+  "settings": [
+    { "type": "text", "id": "prefix", "label": "Prefix", "default": "By" },
+    { "type": "text", "id": "publisher_prefix", "label": "Publisher prefix", "default": "Publisher" },
+    { "type": "text", "id": "author_name", "label": "Fallback author name" },
+    { "type": "text", "id": "separator", "label": "Second author separator", "default": "and" },
+    { "type": "color", "id": "text_color", "label": "Text color", "default": "#4c7b40" }
+  ],
+  "presets": [
+    { "name": "Book author line" }
+  ]
+}
+{% endschema %}

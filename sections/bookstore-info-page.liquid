@@ -1,0 +1,42 @@
+<div class="bookstore-shell">
+  <section class="bookstore-page-hero">
+    <div class="bookstore-container">
+      <nav class="bookstore-copy" aria-label="Breadcrumb"><a href="{{ routes.root_url }}">Home</a> / <span>{{ page.title }}</span></nav>
+      <div class="bookstore-eyebrow">{{ section.settings.eyebrow }}</div>
+      <h1 class="bookstore-heading">{{ page.title | default: section.settings.heading }}</h1>
+      <p class="bookstore-copy">{{ section.settings.copy }}</p>
+    </div>
+  </section>
+  <section class="bookstore-section">
+    <div class="bookstore-container bookstore-info-content">
+      {% capture file_content %}
+        {% render 'bookstore-page-file-content', handle: page.handle %}
+      {% endcapture %}
+      {% assign file_content_stripped = file_content | strip %}
+      {% if page.content != blank %}
+        {{ page.content }}
+      {% elsif file_content_stripped != blank %}
+        {{ file_content }}
+      {% else %}
+        <h2>{{ section.settings.heading }}</h2>
+        <p>{{ section.settings.default_content }}</p>
+      {% endif %}
+    </div>
+  </section>
+</div>
+
+{% schema %}
+{
+  "name": "Bookstore info page",
+  "enabled_on": { "templates": ["page"] },
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Bookstore information" },
+    { "type": "text", "id": "heading", "label": "Fallback heading", "default": "Information" },
+    { "type": "textarea", "id": "copy", "label": "Intro copy", "default": "Clear, trustworthy information for customers, schools, colleges, libraries, and publishers." },
+    { "type": "textarea", "id": "default_content", "label": "Default content", "default": "Add your final page copy in Shopify admin. This template is ready for About, Contact, Privacy Policy, Terms, Return and Refund Policy, Wishlist, and Order Tracking pages." }
+  ],
+  "presets": [
+    { "name": "Bookstore info page" }
+  ]
+}
+{% endschema %}

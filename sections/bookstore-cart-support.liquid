@@ -1,0 +1,19 @@
+<div class="bookstore-shell">
+  <section class="bookstore-section bookstore-section--soft">
+    <div class="bookstore-container bookstore-grid bookstore-grid--3">
+      <div class="bookstore-card bookstore-feature-panel"><strong>Secure checkout</strong><p class="bookstore-copy">Payments and customer data are handled by Shopify checkout.</p></div>
+      <div class="bookstore-card bookstore-feature-panel"><strong>Support for bulk orders</strong><p class="bookstore-copy">Schools, colleges, and libraries can contact support for larger title lists and repeat ordering.</p></div>
+      <div class="bookstore-card bookstore-feature-panel"><strong>Easy returns</strong><p class="bookstore-copy">Link your return and refund policy in the footer for clear post-purchase support.</p></div>
+    </div>
+  </section>
+</div>
+
+{% schema %}
+{
+  "name": "Bookstore cart support",
+  "enabled_on": { "templates": ["cart"] },
+  "presets": [
+    { "name": "Bookstore cart support" }
+  ]
+}
+{% endschema %}

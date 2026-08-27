@@ -1,0 +1,39 @@
+{% liquid
+  assign current_sort = sort_by | default: results.default_sort_by
+  assign bestseller_available = false
+  assign new_release_available = false
+
+  for option in results.sort_options
+    if option.value == 'best-selling'
+      assign bestseller_available = true
+    elsif option.value == 'created-descending'
+      assign new_release_available = true
+    endif
+  endfor
+%}
+
+<nav class="bookstore-sort-pills" aria-label="Sort books">
+  {% if bestseller_available %}
+    <a
+      href="?sort_by=best-selling"
+      class="bookstore-sort-pills__button{% if current_sort == 'best-selling' %} is-active{% endif %}"
+      data-bookstore-sort-pill
+      data-sort-value="best-selling"
+      {% if current_sort == 'best-selling' %}aria-current="page"{% endif %}
+    >
+      Best Seller
+    </a>
+  {% endif %}
+
+  {% if new_release_available %}
+    <a
+      href="?sort_by=created-descending"
+      class="bookstore-sort-pills__button{% if current_sort == 'created-descending' %} is-active{% endif %}"
+      data-bookstore-sort-pill
+      data-sort-value="created-descending"
+      {% if current_sort == 'created-descending' %}aria-current="page"{% endif %}
+    >
+      New Release
+    </a>
+  {% endif %}
+</nav>

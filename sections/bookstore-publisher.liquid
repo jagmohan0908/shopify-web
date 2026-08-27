@@ -1,0 +1,58 @@
+<div class="bookstore-shell">
+  <section class="bookstore-section">
+    <div class="bookstore-container">
+      <div class="bookstore-card bookstore-publisher-hero">
+        <div class="bookstore-publisher-logo">{{ page.title | default: 'P' | slice: 0 }}</div>
+        <div class="bookstore-eyebrow">Publisher profile</div>
+        <h1 class="bookstore-heading">{{ page.title | default: 'Publisher' }}</h1>
+        {% if page.content != blank %}
+          <div class="bookstore-copy">{{ page.content }}</div>
+        {% else %}
+          <p class="bookstore-copy">Explore books, categories, and new releases from this publisher in one focused catalog.</p>
+        {% endif %}
+        <a class="bookstore-search__button bookstore-publisher-anchor" href="#publisher-books">View publisher books</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="bookstore-section bookstore-section--soft" id="publisher-books">
+    <div class="bookstore-container">
+      <h2 class="bookstore-heading bookstore-heading--small">Books from {{ page.title }}</h2>
+      <div class="bookstore-profile-books">
+        {% assign publisher_handle = page.title | handleize %}
+        {% assign publisher_match_count = 0 %}
+        {% for product in collections.all.products %}
+          {% assign product_publisher = product.metafields.custom.publisher_name.value | default: product.vendor %}
+          {% assign product_publisher_handle = product_publisher | handleize %}
+          {% if product_publisher_handle == publisher_handle %}
+            {% assign publisher_match_count = publisher_match_count | plus: 1 %}
+            <a class="bookstore-profile-book" href="{{ product.url }}">
+              <span>
+                {% if product.featured_image != blank %}
+                  {{ product.featured_image | image_url: width: 260 | image_tag: loading: 'lazy', alt: product.title }}
+                {% else %}
+                  {% render 'bookstore-sample-cover', title: product.title, product: product %}
+                {% endif %}
+              </span>
+              <strong>{{ product.title }}</strong>
+              {% render 'price', product_resource: product, show_sale_price_first: true %}
+            </a>
+          {% endif %}
+        {% endfor %}
+      </div>
+      {% if publisher_match_count == 0 %}
+        <p class="bookstore-directory__empty">Books will appear here when product publisher/vendor matches this page title.</p>
+      {% endif %}
+    </div>
+  </section>
+</div>
+
+{% schema %}
+{
+  "name": "Bookstore publisher page",
+  "enabled_on": { "templates": ["page"] },
+  "presets": [
+    { "name": "Bookstore publisher page" }
+  ]
+}
+{% endschema %}

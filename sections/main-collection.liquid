@@ -1,0 +1,353 @@
+
+
+<script
+  src="{{ 'results-list.js' | asset_url }}"
+  type="module"
+  fetchpriority="low"
+></script>
+
+{% javascript %}
+  const url = new URL(window.location.href);
+  if (url.hash) {
+    document.addEventListener(
+      'DOMContentLoaded',
+      () => {
+        const card = document.getElementById(url.hash.slice(1));
+        if (card) {
+          card.scrollIntoView({ behavior: 'instant' });
+        }
+      },
+      { once: true }
+    );
+  }
+{% endjavascript %}
+
+{% comment %} We always render this full-width, as the child blocks have width: page/full settings {% endcomment %}
+{% liquid
+  if section.settings.background_color != blank
+    render 'contrast-override', background_color: section.settings.background_color, section_id: section.id
+  endif
+%}
+
+{% render 'collection-wrapper-styles' %}
+
+<div
+  class="section-background{% if section.settings.background_color != blank %} color-custom-{{ section.id }}{% endif %}"
+></div>
+{% # theme-check-disable-next-line UnknownFilter %}
+<collection-component view-event-payload="{{ collection | standard_event_data: 'view' | escape }}">
+  <results-list
+    class="section product-grid-container{% if section.settings.background_color != blank %} color-custom-{{ section.id }}{% endif %}"
+    style="--padding-block-start: {{ section.settings.padding-block-start }}px; --padding-block-end: {{ section.settings.padding-block-end }}px;"
+    section-id="{{ section.id }}"
+    infinite-scroll="{{ section.settings.enable_infinite_scroll }}"
+  >
+    {% render 'skip-to-content-link', href: '#ResultsList', text: 'accessibility.skip_to_results_list' %}
+
+    <div
+      class="collection-wrapper grid gap-style{% if section.settings.product_grid_width == 'full-width' %} collection-wrapper--grid-full-width{% endif %}"
+    >
+      {% content_for 'block',
+        type: 'filters',
+        id: 'filters',
+        results: collection,
+        results_size: collection.products_count
+      %}
+
+      {% assign products_per_page = 96 %}
+
+      {% if section.settings.enable_infinite_scroll == false %}
+        {% assign products_per_page = section.settings.products_per_page %}
+      {% endif %}
+
+      {% liquid
+        assign current_vendor_filter = request.params['filter.p.vendor'] | strip
+        assign current_author_filter = request.params['filter.p.m.custom.author'] | default: request.params['author'] | strip
+        if current_vendor_filter == blank and collection.handle == 'vendors'
+          assign current_vendor_filter = collection.current_vendor | default: request.params['q'] | strip
+        endif
+        if collection.filters != blank
+          for filter in collection.filters
+            assign filter_label_downcase = filter.label | downcase
+            if current_vendor_filter == blank
+              if filter.param_name contains 'vendor' or filter_label_downcase contains 'publisher'
+                if filter.active_values.size > 0
+                  assign current_vendor_filter = filter.active_values.first.value | default: filter.active_values.first.label | strip
+                endif
+              endif
+            endif
+            if current_author_filter == blank
+              if filter.param_name contains 'author' or filter_label_downcase contains 'author'
+                if filter.active_values.size > 0
+                  assign current_author_filter = filter.active_values.first.value | default: filter.active_values.first.label | strip
+                endif
+              endif
+            endif
+          endfor
+        endif
+        assign current_vendor_filter_key = current_vendor_filter | handleize
+        assign current_author_filter_key = current_author_filter | handleize
+      %}
+
+      {% paginate collection.products by products_per_page %}
+        {% capture children %}
+          {% for product in collection.products %}
+            {% liquid
+              assign searchable_author = product.metafields.custom.author.value | default: product.metafields.custom.author | default: product.metafields.custom.author_name_and_about.value | default: product.metafields.book.author.value
+              assign searchable_isbn = product.metafields.custom.isbn.value | default: product.metafields.custom.isbn | default: product.selected_or_first_available_variant.sku | default: product.selected_or_first_available_variant.barcode
+              assign searchable_format = product.metafields.custom.format.value | default: product.metafields.custom.format | default: product.metafields.custom.cover_type.value | default: product.metafields.custom.cover_type
+              capture searchable_tags
+                for tag in product.tags
+                  echo tag
+                  echo ' '
+                endfor
+              endcapture
+              capture searchable_variant_codes
+                for variant in product.variants
+                  echo variant.sku
+                  echo ' '
+                  echo variant.barcode
+                  echo ' '
+                endfor
+              endcapture
+              capture collection_search_text
+                echo product.title
+                echo ' '
+                echo product.vendor
+                echo ' '
+                echo searchable_author
+                echo ' '
+                echo searchable_isbn
+                echo ' '
+                echo searchable_format
+                echo ' '
+                echo searchable_tags
+                echo ' '
+                echo searchable_variant_codes
+              endcapture
+              assign product_vendor_key = product.vendor | handleize
+              assign product_author_key = searchable_author | handleize
+              assign should_render_product = true
+              if current_vendor_filter_key != blank and product_vendor_key != current_vendor_filter_key
+                assign should_render_product = false
+              endif
+              if current_author_filter_key != blank and product_author_key != current_author_filter_key
+                assign should_render_product = false
+              endif
+            %}
+            {% if should_render_product %}
+            <li
+              id="{{ section.id }}-{{ product.id }}"
+              class="product-grid__item product-grid__item--{{ forloop.index0 }}"
+              data-page="{{ paginate.current_page }}"
+              data-product-id="{{ product.id }}"
+              data-bookstore-product-vendor="{{ product.vendor | escape }}"
+              data-bookstore-product-author="{{ searchable_author | escape }}"
+              data-bookstore-product-format="{{ searchable_format | escape }}"
+              data-collection-search-text="{{ collection_search_text | strip | escape }}"
+              ref="cards[]"
+            >
+              {% content_for 'block',
+                type: '_product-card',
+                id: 'product-card',
+                closest.product: product,
+                product_view_context: 'collection'
+              %}
+            </li>
+            {% endif %}
+          {% endfor %}
+        {% endcapture %}
+
+        {% render 'product-grid',
+          section: section,
+          children: children,
+          products: collection.products,
+          paginate: paginate,
+          enable_infinite_scroll: section.settings.enable_infinite_scroll
+        %}
+      {% endpaginate %}
+    </div>
+  </results-list>
+</collection-component>
+
+{% schema %}
+{
+  "name": "t:names.collection_container",
+  "enabled_on": {
+    "templates": ["collection"]
+  },
+  "settings": [
+    {
+      "type": "select",
+      "id": "layout_type",
+      "label": "t:settings.type",
+      "options": [
+        {
+          "value": "grid",
+          "label": "t:options.grid"
+        },
+        {
+          "value": "organic",
+          "label": "t:options.editorial"
+        }
+      ],
+      "default": "grid"
+    },
+    {
+      "type": "select",
+      "id": "product_card_size",
+      "label": "t:settings.card_size",
+      "options": [
+        {
+          "value": "small",
+          "label": "t:options.small"
+        },
+        {
+          "value": "medium",
+          "label": "t:options.medium"
+        },
+        {
+          "value": "large",
+          "label": "t:options.large"
+        },
+        {
+          "value": "extra-large",
+          "label": "t:options.extra_large"
+        }
+      ],
+      "default": "medium",
+      "visible_if": "{{ section.settings.layout_type == 'grid' }}"
+    },
+    {
+      "type": "select",
+      "id": "mobile_product_card_size",
+      "label": "t:settings.mobile_card_size",
+      "options": [
+        {
+          "value": "small",
+          "label": "t:options.small"
+        },
+        {
+          "value": "large",
+          "label": "t:options.large"
+        }
+      ],
+      "default": "small"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_infinite_scroll",
+      "label": "t:settings.auto_load_products",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "label": "t:settings.products_per_page",
+      "min": 8,
+      "max": 36,
+      "step": 4,
+      "default": 24,
+      "visible_if": "{{ section.settings.enable_infinite_scroll == false }}"
+    },
+    {
+      "type": "header",
+      "content": "t:content.layout"
+    },
+    {
+      "type": "select",
+      "id": "product_grid_width",
+      "label": "t:settings.width",
+      "options": [
+        {
+          "value": "centered",
+          "label": "t:options.page"
+        },
+        {
+          "value": "full-width",
+          "label": "t:options.full"
+        }
+      ],
+      "default": "centered"
+    },
+    {
+      "type": "checkbox",
+      "id": "full_width_on_mobile",
+      "label": "t:settings.full_width_on_mobile",
+      "default": true,
+      "visible_if": "{{ section.settings.product_grid_width != 'full-width' }}"
+    },
+    {
+      "type": "range",
+      "id": "columns_gap_horizontal",
+      "label": "t:settings.horizontal_gap",
+      "min": 0,
+      "max": 50,
+      "step": 1,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "columns_gap_vertical",
+      "label": "t:settings.vertical_gap",
+      "min": 0,
+      "max": 50,
+      "step": 1,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-start",
+      "label": "t:settings.left_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-end",
+      "label": "t:settings.right_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "header",
+      "content": "t:content.section_layout"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "t:settings.background_color",
+      "placeholder": "t:settings.default"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "t:settings.top_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "t:settings.bottom_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 8
+    }
+  ],
+  "presets": []
+}
+{% endschema %}

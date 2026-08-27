@@ -1,0 +1,13 @@
+{% liquid
+  assign cover_title = title | default: product.title | default: resource.title | default: 'Untitled Book'
+  assign cover_author = author | default: product.metafields.custom.author.value | default: product.vendor
+  assign cover_class = class | default: ''
+%}
+
+<div class="bookstore-sample-cover {{ cover_class }}" aria-label="{{ cover_title | escape }}">
+  <span class="bookstore-sample-cover__rule"></span>
+  <strong>{{ cover_title }}</strong>
+  {% if cover_author != blank %}
+    <small>{{ cover_author }}</small>
+  {% endif %}
+</div>

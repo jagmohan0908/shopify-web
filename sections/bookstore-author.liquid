@@ -1,0 +1,67 @@
+<div class="bookstore-shell bookstore-author">
+  <section class="bookstore-directory__hero">
+    <div class="bookstore-container">
+      <nav class="bookstore-copy" aria-label="Breadcrumb">
+        <a href="{{ routes.root_url }}">Home</a> /
+        <a href="{{ routes.search_url }}?view=authors&amp;q=*">Authors</a> /
+        <span>{{ page.title }}</span>
+      </nav>
+      <div class="bookstore-author__intro">
+        <span class="bookstore-directory__initial">{{ page.title | slice: 0 | upcase }}</span>
+        <div>
+          <span class="bookstore-eyebrow">Author profile</span>
+          <h1 class="bookstore-heading">{{ page.title }}</h1>
+        </div>
+      </div>
+      {% if page.content != blank %}
+        <div class="bookstore-copy bookstore-author__content">{{ page.content }}</div>
+      {% else %}
+        <p class="bookstore-copy">Explore books and editions by {{ page.title }}.</p>
+      {% endif %}
+      <a class="bookstore-author__books" href="#author-books">
+        Find books by {{ page.title }} &rsaquo;
+      </a>
+    </div>
+  </section>
+
+  <section class="bookstore-section" id="author-books">
+    <div class="bookstore-container">
+      <h2 class="bookstore-heading bookstore-heading--small">Books by {{ page.title }}</h2>
+      <div class="bookstore-profile-books">
+        {% assign author_handle = page.title | handleize %}
+        {% assign author_match_count = 0 %}
+        {% for product in collections.all.products %}
+          {% assign product_author = product.metafields.custom.author.value | default: product.metafields.custom.author_name_and_about.value | default: product.metafields.book.author.value %}
+          {% assign product_author_handle = product_author | handleize %}
+          {% if product_author_handle == author_handle %}
+            {% assign author_match_count = author_match_count | plus: 1 %}
+            <a class="bookstore-profile-book" href="{{ product.url }}">
+              <span>
+                {% if product.featured_image != blank %}
+                  {{ product.featured_image | image_url: width: 260 | image_tag: loading: 'lazy', alt: product.title }}
+                {% else %}
+                  {% render 'bookstore-sample-cover', title: product.title, product: product %}
+                {% endif %}
+              </span>
+              <strong>{{ product.title }}</strong>
+              {% render 'price', product_resource: product, show_sale_price_first: true %}
+            </a>
+          {% endif %}
+        {% endfor %}
+      </div>
+      {% if author_match_count == 0 %}
+        <p class="bookstore-directory__empty">Books will appear here when product author metafields match this page title.</p>
+      {% endif %}
+    </div>
+  </section>
+</div>
+
+{% schema %}
+{
+  "name": "Bookstore author profile",
+  "enabled_on": { "templates": ["page"] },
+  "presets": [
+    { "name": "Bookstore author profile" }
+  ]
+}
+{% endschema %}

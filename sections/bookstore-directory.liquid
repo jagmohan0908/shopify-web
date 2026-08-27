@@ -1,0 +1,404 @@
+{% liquid
+  assign directory_type = section.settings.directory_type | default: 'publishers'
+  if directory_type == 'authors'
+    assign directory_heading = 'Browse Authors'
+    assign directory_copy = 'Every author below is generated automatically from the Author metafield on products.'
+    assign directory_eyebrow = 'Author directory'
+  else
+    assign directory_heading = 'Browse Publishers'
+    assign directory_copy = 'Every publisher below is generated automatically from the Vendor field of books published to the Online Store.'
+    assign directory_eyebrow = 'Publisher directory'
+  endif
+%}
+
+<script>
+  (() => {
+    const params = new URLSearchParams(window.location.search);
+    const query = params.get('directory_search') || params.get('q') || '';
+
+    if (query && query !== '*') {
+      document.documentElement.classList.add('bookstore-directory-filtering');
+    }
+  })();
+</script>
+
+<div class="bookstore-shell bookstore-directory">
+  <section class="bookstore-directory__hero">
+    <div class="bookstore-container">
+      <nav class="bookstore-copy" aria-label="Breadcrumb">
+        <a href="{{ routes.root_url }}">Home</a> / <span>{{ directory_heading }}</span>
+      </nav>
+      <span class="bookstore-eyebrow">{{ directory_eyebrow }}</span>
+      <h1 class="bookstore-heading">{{ directory_heading }}</h1>
+      <p class="bookstore-copy">{{ directory_copy }}</p>
+      {% assign directory_initial_search = request.params.directory_search | default: search.terms | default: request.params.q %}
+      {% if directory_initial_search == '*' %}
+        {% assign directory_initial_search = blank %}
+      {% endif %}
+      {% assign directory_search_downcase = directory_initial_search | downcase | strip %}
+      <label class="bookstore-directory__search">
+        <span class="visually-hidden">Filter {{ directory_type }}</span>
+        <input type="search" placeholder="Search {{ directory_type }}" value="{{ directory_initial_search | escape }}" data-directory-search>
+        <span aria-hidden="true">⌕</span>
+      </label>
+      <nav class="bookstore-directory__letters" aria-label="{{ directory_heading }} alphabetical directory" data-directory-letters hidden></nav>
+    </div>
+  </section>
+
+  <section class="bookstore-section">
+    <div class="bookstore-container">
+      {% if directory_type == 'authors' %}
+        {% liquid
+          assign author_filter = blank
+          if search.performed
+            for filter in search.filters
+              assign filter_label = filter.label | downcase
+              if filter.param_name contains 'author' or filter_label contains 'author'
+                assign author_filter = filter
+                break
+              endif
+            endfor
+          endif
+          if author_filter == blank
+            for filter in collections.all.filters
+              assign filter_label = filter.label | downcase
+              if filter.param_name contains 'author' or filter_label contains 'author'
+                assign author_filter = filter
+                break
+              endif
+            endfor
+          endif
+        %}
+
+        {% assign author_count = 0 %}
+        <div
+          class="bookstore-directory__grid"
+          data-directory-grid
+          data-author-directory-grid
+          data-author-data-url="{{ routes.search_url }}?view=authors-data&amp;type=product&amp;q=*"
+          data-author-filter-param="{% if author_filter != blank %}{{ author_filter.param_name }}{% else %}filter.p.m.custom.author{% endif %}"
+          data-author-base-url="{{ routes.collections_url }}/all"
+        >
+          {% if author_filter != blank and author_filter.values.size > 0 %}
+            {% for author_value in author_filter.values %}
+              {% liquid
+                assign author_name = author_value.label | default: author_value.value | strip
+                assign author_name_downcase = author_name | downcase | strip
+                assign encoded_author_value = author_value.value | url_encode
+                assign author_filter_url = routes.search_url | append: '?view=author&type=product&q=*&' | append: author_filter.param_name | append: '=' | append: encoded_author_value | append: '&author=' | append: encoded_author_value
+              %}
+              {% if directory_search_downcase != blank %}
+                {% unless author_name_downcase contains directory_search_downcase %}
+                  {% continue %}
+                {% endunless %}
+              {% endif %}
+              {% if author_name != blank %}
+                {% assign author_count = author_count | plus: 1 %}
+                <a
+                  class="bookstore-directory__card"
+                  href="{{ author_filter_url }}"
+                  data-directory-item
+                  data-directory-name="{{ author_name | escape }}"
+                >
+                  <span class="bookstore-directory__initial">{{ author_name | slice: 0 | upcase }}</span>
+                  <span>
+                    <strong>{{ author_name }}</strong>
+                    <small>{{ author_value.count }} books &rsaquo;</small>
+                  </span>
+                </a>
+              {% endif %}
+            {% endfor %}
+          {% else %}
+            {% paginate collections.all.products by 250 %}
+              {% assign seen_authors = '|' %}
+              {% for product in collections.all.products %}
+                {% liquid
+                  assign author_name = product.metafields.custom.author.value | default: product.metafields.custom.author | default: product.metafields.custom.author_name_and_about.value | default: product.metafields.book.author.value | strip
+                  assign author_key = author_name | downcase
+                  assign author_token = author_key | append: '|'
+                  assign encoded_author = author_name | url_encode
+                  assign author_search_url = routes.search_url | append: '?view=author&type=product&q=*&filter.p.m.custom.author=' | append: encoded_author | append: '&author=' | append: encoded_author
+                %}
+                {% if directory_search_downcase != blank %}
+                  {% unless author_key contains directory_search_downcase %}
+                    {% continue %}
+                  {% endunless %}
+                {% endif %}
+                {% if author_name != blank %}
+                  {% unless seen_authors contains author_token %}
+                    {% assign seen_authors = seen_authors | append: author_token %}
+                    {% assign author_count = author_count | plus: 1 %}
+                    <a
+                      class="bookstore-directory__card"
+                      href="{{ author_search_url }}"
+                      data-directory-item
+                      data-directory-name="{{ author_name | escape }}"
+                    >
+                      <span class="bookstore-directory__initial">{{ author_name | slice: 0 | upcase }}</span>
+                      <span>
+                        <strong>{{ author_name }}</strong>
+                        <small>View author books &rsaquo;</small>
+                      </span>
+                    </a>
+                  {% endunless %}
+                {% endif %}
+              {% endfor %}
+            {% endpaginate %}
+          {% endif %}
+        </div>
+        {% if author_count == 0 %}
+          <div class="bookstore-directory__empty">Authors will appear here when product Author metafields are added and indexed.</div>
+        {% endif %}
+      {% else %}
+        <div class="bookstore-directory__grid" data-directory-grid>
+          {% for vendor in collections.all.all_vendors %}
+            {% liquid
+              assign vendor_card_pic = blank
+              assign vendor_handle = vendor | handleize
+              assign vendor_downcase = vendor | downcase | strip
+            %}
+            {% if directory_search_downcase != blank %}
+              {% unless vendor_downcase contains directory_search_downcase %}
+                {% continue %}
+              {% endunless %}
+            {% endif %}
+            {% liquid
+              for vendor_product in collections.all.products
+                assign product_vendor_handle = vendor_product.vendor | handleize
+                assign vendor_pic_file = vendor_product.metafields.custom.vendor_pic.value
+                if product_vendor_handle == vendor_handle and vendor_pic_file != blank
+                  if vendor_pic_file.preview_image != blank
+                    assign vendor_card_pic = vendor_pic_file.preview_image
+                  elsif vendor_pic_file.image != blank
+                    assign vendor_card_pic = vendor_pic_file.image
+                  else
+                    assign vendor_card_pic = vendor_pic_file
+                  endif
+                  break
+                endif
+              endfor
+            %}
+            <a
+              class="bookstore-directory__card"
+              href="{{ routes.collections_url }}/vendors?q={{ vendor | url_encode }}"
+              data-directory-item
+              data-directory-name="{{ vendor | escape }}"
+            >
+              {% if vendor_card_pic != blank %}
+                <span class="bookstore-directory__initial bookstore-directory__initial--image">
+                  {{ vendor_card_pic | image_url: width: 160 | image_tag: loading: 'lazy', alt: vendor }}
+                </span>
+              {% else %}
+                <span class="bookstore-directory__initial">{{ vendor | slice: 0 | upcase }}</span>
+              {% endif %}
+              <span>
+                <strong>{{ vendor }}</strong>
+                <small>View publisher books &rsaquo;</small>
+              </span>
+            </a>
+          {% else %}
+            <div class="bookstore-directory__empty">Publishers will appear here when products are published.</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+      <div class="bookstore-directory__empty" data-directory-empty hidden>No matching {{ directory_type }} found.</div>
+    </div>
+  </section>
+</div>
+
+<script>
+  (() => {
+    const section = document.currentScript.previousElementSibling;
+    const search = section?.querySelector('[data-directory-search]');
+    let items = Array.from(section?.querySelectorAll('[data-directory-item]') || []);
+    const empty = section?.querySelector('[data-directory-empty]');
+    const authorGrid = section?.querySelector('[data-author-directory-grid]');
+    const directoryGrid = section?.querySelector('[data-directory-grid]');
+    const letters = section?.querySelector('[data-directory-letters]');
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialQuery = urlParams.get('directory_search') || urlParams.get('q') || '';
+
+    if (search && !search.value && initialQuery && initialQuery !== '*') {
+      search.value = initialQuery;
+    }
+
+    const getItemLetter = (item) => {
+      const name = String(item.dataset.directoryName || '').trim();
+      const first = name.slice(0, 1).toUpperCase();
+      return /^[A-Z]$/.test(first) ? first : '#';
+    };
+
+    const sortDirectoryItems = () => {
+      const grid = authorGrid || directoryGrid;
+      if (!grid) return;
+      items = Array.from(grid.querySelectorAll('[data-directory-item]'));
+      items
+        .sort((a, b) => String(a.dataset.directoryName || '').localeCompare(String(b.dataset.directoryName || ''), undefined, { sensitivity: 'base' }))
+        .forEach((item) => grid.append(item));
+    };
+
+    const buildDirectoryLetters = () => {
+      if (!letters) return;
+      const activeLetters = new Set(items.map(getItemLetter));
+      letters.innerHTML = '';
+
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach((letter) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = letter;
+        button.disabled = !activeLetters.has(letter);
+        button.addEventListener('click', () => {
+          const target = items.find((item) => getItemLetter(item) === letter);
+          if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+        letters.append(button);
+      });
+
+      letters.hidden = items.length === 0;
+    };
+
+    const applyDirectorySearch = () => {
+      if (!search) return;
+      const query = search.value.trim().toLocaleLowerCase();
+      let visible = 0;
+      items.forEach((item) => {
+        const match = item.dataset.directoryName.toLocaleLowerCase().includes(query);
+        item.hidden = !match;
+        if (match) visible += 1;
+      });
+      if (empty) empty.hidden = visible !== 0;
+      document.documentElement.classList.remove('bookstore-directory-filtering');
+    };
+
+    sortDirectoryItems();
+    buildDirectoryLetters();
+
+    if (search) {
+      search.addEventListener('input', applyDirectorySearch);
+      applyDirectorySearch();
+    }
+
+    section?.addEventListener('click', (event) => {
+      const link = event.target.closest('a[href*="%2Fcollections%2Fall%3F"]');
+      if (!link) return;
+      event.preventDefault();
+      const url = new URL(link.href, window.location.origin);
+      const decodedPath = decodeURIComponent(url.pathname.slice(1));
+      window.location.href = decodedPath + url.search + url.hash;
+    });
+
+    if (!authorGrid) return;
+
+    const existingAuthors = new Set(items.map((item) => item.dataset.directoryName.toLocaleLowerCase()));
+    const dataUrl = authorGrid.dataset.authorDataUrl;
+    const filterParam = authorGrid.dataset.authorFilterParam || 'filter.p.m.custom.author';
+    const baseUrl = authorGrid.dataset.authorBaseUrl || '/collections/all';
+
+    const getDirectoryQuery = () => (search?.value || '').trim().toLocaleLowerCase();
+
+    const updateAuthorCardCount = (authorName, count) => {
+      const cleanName = String(authorName || '').trim();
+      if (!cleanName || !count) return;
+      const key = cleanName.toLocaleLowerCase();
+      const card = items.find((item) => String(item.dataset.directoryName || '').toLocaleLowerCase() === key);
+      const small = card?.querySelector('small');
+      if (small) small.innerHTML = `${count} ${count === 1 ? 'book' : 'books'} &rsaquo;`;
+    };
+
+    const addAuthorCard = (authorName, count = 0) => {
+      const cleanName = String(authorName || '').trim();
+      if (!cleanName) return;
+      const key = cleanName.toLocaleLowerCase();
+      if (existingAuthors.has(key)) {
+        updateAuthorCardCount(cleanName, count);
+        return;
+      }
+      existingAuthors.add(key);
+
+      const card = document.createElement('a');
+      card.className = 'bookstore-directory__card';
+      card.href = `/search?view=author&type=product&q=*&${filterParam}=${encodeURIComponent(cleanName)}&author=${encodeURIComponent(cleanName)}`;
+      card.dataset.directoryItem = '';
+      card.dataset.directoryName = cleanName;
+
+      const currentQuery = getDirectoryQuery();
+      if (currentQuery && !key.includes(currentQuery)) {
+        card.hidden = true;
+      }
+
+      const initial = document.createElement('span');
+      initial.className = 'bookstore-directory__initial';
+      initial.textContent = cleanName.slice(0, 1).toUpperCase();
+
+      const text = document.createElement('span');
+      const strong = document.createElement('strong');
+      strong.textContent = cleanName;
+      const small = document.createElement('small');
+      small.innerHTML = count ? `${count} ${count === 1 ? 'book' : 'books'} &rsaquo;` : 'View author books &rsaquo;';
+
+      text.append(strong, small);
+      card.append(initial, text);
+      authorGrid.append(card);
+      items.push(card);
+    };
+
+    const loadAllAuthorMetafields = async () => {
+      if (!dataUrl) return;
+
+      const authorCounts = new Map();
+      let page = 1;
+      let pages = 1;
+      while (page <= pages && page <= 60) {
+        const separator = dataUrl.includes('?') ? '&' : '?';
+        const response = await fetch(`${dataUrl}${separator}page=${page}`, {
+          headers: { Accept: 'application/json' },
+        });
+        if (!response.ok) break;
+        const payload = await response.json();
+        pages = Number(payload.pages || 1);
+        (payload.authors || []).forEach((author) => {
+          const cleanName = String(author.name || '').trim();
+          if (!cleanName) return;
+          const key = cleanName.toLocaleLowerCase();
+          authorCounts.set(key, {
+            name: cleanName,
+            count: (authorCounts.get(key)?.count || 0) + Number(author.count || 1),
+          });
+        });
+        page += 1;
+      }
+
+      Array.from(authorCounts.values())
+        .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+        .forEach((author) => addAuthorCard(author.name, author.count));
+
+      sortDirectoryItems();
+      buildDirectoryLetters();
+      applyDirectorySearch();
+      if (empty) empty.hidden = items.length !== 0;
+    };
+
+    loadAllAuthorMetafields().catch(() => {});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Bookstore directory",
+  "settings": [
+    {
+      "type": "select",
+      "id": "directory_type",
+      "label": "Directory type",
+      "options": [
+        { "value": "publishers", "label": "Publishers" },
+        { "value": "authors", "label": "Authors" }
+      ],
+      "default": "publishers"
+    }
+  ],
+  "presets": [
+    { "name": "Bookstore directory" }
+  ]
+}
+{% endschema %}

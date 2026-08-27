@@ -1,0 +1,26 @@
+{% liquid
+  assign product_resource = closest.product
+  assign author = product_resource.metafields.custom.author.value
+  assign publisher = product_resource.metafields.custom.publisher_name.value | default: product_resource.vendor
+%}
+
+{% if author != blank or publisher != blank %}
+  <div class="bookstore-card-meta" {{ block.shopify_attributes }}>
+    {% if author != blank %}
+      {{ author }}
+    {% else %}
+      {{ publisher }}
+    {% endif %}
+  </div>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Book card meta",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    { "name": "Book card meta" }
+  ]
+}
+{% endschema %}

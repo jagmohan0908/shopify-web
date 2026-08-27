@@ -1,0 +1,93 @@
+<section class="bb-contact-hero-section color-{{ section.settings.color_scheme }}" style="--bb-accent: {{ section.settings.accent_color }}; --bb-soft: {{ section.settings.background_color }}; --bb-max: {{ section.settings.max_width }}px; --bb-side: {{ section.settings.side_padding }}px; --bb-top: {{ section.settings.padding_top }}px; --bb-bottom: {{ section.settings.padding_bottom }}px;">
+  <div class="bb-contact-section-inner">
+    <div class="bb-contact-hero-card">
+      <div>
+        {% if section.settings.eyebrow != blank %}
+          <p class="bb-contact-kicker">{{ section.settings.eyebrow }}</p>
+        {% endif %}
+        <h1>{{ section.settings.heading | default: page.title }}</h1>
+      </div>
+      {% if section.settings.intro != blank %}
+        <p class="bb-contact-hero-copy">{{ section.settings.intro }}</p>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+{% stylesheet %}
+  .bb-contact-hero-section {
+    background: var(--bb-soft);
+    padding: var(--bb-top) 0 var(--bb-bottom);
+  }
+
+  .bb-contact-section-inner {
+    margin: 0 auto;
+    max-width: var(--bb-max);
+    padding-left: var(--bb-side);
+    padding-right: var(--bb-side);
+    width: 100%;
+  }
+
+  .bb-contact-hero-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 460px);
+    gap: clamp(18px, 4vw, 42px);
+    align-items: end;
+  }
+
+  .bb-contact-kicker {
+    color: var(--bb-accent);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: .14em;
+    line-height: 1.2;
+    margin: 0 0 10px;
+    text-transform: uppercase;
+  }
+
+  .bb-contact-hero-card h1 {
+    color: #10213a;
+    font-family: var(--font-heading--family, serif);
+    font-size: clamp(36px, 6vw, 68px);
+    letter-spacing: -.04em;
+    line-height: .98;
+    margin: 0;
+  }
+
+  .bb-contact-hero-copy {
+    color: rgba(16, 33, 58, .74);
+    font-size: clamp(15px, 1.6vw, 18px);
+    line-height: 1.7;
+    margin: 0;
+  }
+
+  @media (max-width: 749px) {
+    .bb-contact-section-inner {
+      padding-left: min(var(--bb-side), 20px);
+      padding-right: min(var(--bb-side), 20px);
+    }
+
+    .bb-contact-hero-card {
+      grid-template-columns: 1fr;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Contact hero",
+  "settings": [
+    { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-1" },
+    { "type": "color", "id": "background_color", "label": "Background color", "default": "#f2f6ff" },
+    { "type": "color", "id": "accent_color", "label": "Accent color", "default": "#b6191a" },
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Contact us" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "We would love to hear from you" },
+    { "type": "textarea", "id": "intro", "label": "Intro", "default": "For orders, publisher enquiries, bulk requirements, or general support, reach the Books Bunny team here." },
+    { "type": "range", "id": "max_width", "label": "Content max width", "min": 900, "max": 1600, "step": 20, "unit": "px", "default": 1240 },
+    { "type": "range", "id": "side_padding", "label": "Left/right padding", "min": 0, "max": 80, "step": 2, "unit": "px", "default": 24 },
+    { "type": "range", "id": "padding_top", "label": "Top padding", "min": 0, "max": 140, "step": 4, "unit": "px", "default": 60 },
+    { "type": "range", "id": "padding_bottom", "label": "Bottom padding", "min": 0, "max": 140, "step": 4, "unit": "px", "default": 28 }
+  ],
+  "presets": [{ "name": "Contact hero" }]
+}
+{% endschema %}

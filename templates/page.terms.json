@@ -1,0 +1,25 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "info": {
+      "type": "bookstore-info-page",
+      "settings": {
+        "eyebrow": "Terms and conditions",
+        "heading": "Terms and Conditions",
+        "copy": "Straightforward shopping, account, payment, and order terms.",
+        "default_content": "Add your final terms and conditions in Shopify admin, including publisher marketplace, institutional order, cancellation, and account terms."
+      }
+    }
+  },
+  "order": [
+    "info"
+  ]
+}

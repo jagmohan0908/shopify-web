@@ -1,0 +1,91 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "type": "footer",
+  "name": "Footer",
+  "sections": {
+    "bookstore_custom_footer_global": {
+      "type": "bookstore-custom-footer",
+      "blocks": {
+        "footer_discover": {
+          "type": "link_column",
+          "settings": {
+            "heading": "Discover",
+            "link_1_label": "Browse Categories",
+            "link_1_url": "/collections/all",
+            "link_2_label": "Bestsellers",
+            "link_2_url": "/collections/all/bestseller",
+            "link_3_label": "Publishers",
+            "link_3_url": "/search?view=publishers&q=*",
+            "link_4_label": "Authors",
+            "link_4_url": "/search?view=authors&q=*"
+          }
+        },
+        "footer_support": {
+          "type": "link_column",
+          "settings": {
+            "heading": "Support",
+            "link_1_label": "Contact Us",
+            "link_1_url": "/pages/contact",
+            "link_2_label": "FAQ",
+            "link_2_url": "/pages/faq",
+            "link_3_label": "Shipping Policy",
+            "link_3_url": "/policies/shipping-policy",
+            "link_4_label": "Refund Policy",
+            "link_4_url": "/policies/refund-policy"
+          }
+        },
+        "footer_legal": {
+          "type": "link_column",
+          "settings": {
+            "heading": "Legal",
+            "link_1_label": "Privacy Policy",
+            "link_1_url": "/policies/privacy-policy",
+            "link_2_label": "Terms & Conditions",
+            "link_2_url": "/policies/terms-of-service",
+            "link_3_label": "Copyright Policy",
+            "link_3_url": "/policies/legal-notice",
+            "link_4_label": "About Us",
+            "link_4_url": "/pages/about-us"
+          }
+        }
+      },
+      "block_order": [
+        "footer_discover",
+        "footer_support",
+        "footer_legal"
+      ],
+      "settings": {
+        "footer_logo": "shopify://shop_images/booksbunnii_logo_1406db7b-b909-4fa1-a432-c97fe43b14a1.png",
+        "logo_width": 220,
+        "show_brand_name": false,
+        "brand_name": "Books Bunnii",
+        "brand_text": "Connecting readers with timeless knowledge and modern narratives.",
+        "show_newsletter": false,
+        "newsletter_heading": "Newsletter",
+        "newsletter_text": "Subscribe for literary news and exclusive releases.",
+        "newsletter_placeholder": "Email Address",
+        "newsletter_button": "Join",
+        "bottom_text": "© 2026 Books Bunny. All rights reserved.",
+        "color_theme": "custom",
+        "background_color": "#d5e3fd",
+        "heading_color": "#0d1c2f",
+        "text_color": "#45464d",
+        "accent_color": "#b6191a",
+        "card_background": "#ffffff",
+        "button_background": "#000000",
+        "button_text_color": "#ffffff"
+      }
+    }
+  },
+  "order": [
+    "bookstore_custom_footer_global"
+  ]
+}

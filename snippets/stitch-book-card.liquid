@@ -1,0 +1,60 @@
+{% liquid
+  assign book_author = product.metafields.custom.author.value | default: product.metafields.custom.author_name_and_about.value | default: product.metafields.book.author.value | default: product.vendor
+  assign card_form_id = 'StitchProductForm-' | append: section_id | append: '-' | append: product.id
+  assign compare_price = product.compare_at_price
+  assign sale_percent = 0
+  if compare_price > product.price
+    assign sale_difference = compare_price | minus: product.price
+    assign sale_percent = sale_difference | times: 100 | divided_by: compare_price
+  endif
+%}
+
+<article class="sb-book-card{% if compact %} sb-book-card--compact{% endif %}" data-carousel-slide data-product-id="{{ product.id }}">
+  <a class="sb-book-card__cover" href="{{ product.url }}" aria-label="{{ product.title | escape }}">
+    {% if product.featured_image %}
+      {{ product.featured_image | image_url: width: 420 | image_tag: loading: 'lazy', widths: '180, 260, 360, 420', sizes: '(max-width: 760px) 45vw, 180px', alt: product.title }}
+    {% else %}
+      <span>{{ product.title | slice: 0 }}</span>
+    {% endif %}
+    {% if sale_percent > 0 %}<em>{{ sale_percent }}% off</em>{% endif %}
+  </a>
+
+  <div class="sb-book-card__body">
+    <p>{{ book_author }}</p>
+    <h3><a href="{{ product.url }}">{{ product.title }}</a></h3>
+    <div class="sb-book-card__price">
+      <strong>{{ product.price | money }}</strong>
+      {% if product.compare_at_price > product.price %}
+        <s>{{ product.compare_at_price | money }}</s>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="sb-book-card__overlay">
+    {% if product.available and product.selected_or_first_available_variant %}
+      {% if product.has_only_default_variant %}
+        <product-form-component
+          data-section-id="{{ section_id }}"
+          data-product-id="{{ product.id }}"
+          data-product-url="{{ product.url }}"
+          on:submit="/handleSubmit"
+        >
+          <div class="visually-hidden" aria-live="assertive" role="status" aria-atomic="true" ref="liveRegion"></div>
+          {% form 'product', product, id: card_form_id, data-type: 'add-to-cart-form' %}
+            <input type="hidden" name="id" ref="variantId" value="{{ product.selected_or_first_available_variant.id }}">
+            {% render 'add-to-cart-button',
+              add_to_cart_text: 'Add to Cart',
+              class: 'sb-card-add',
+              can_add_to_cart: true,
+              product: product
+            %}
+          {% endform %}
+        </product-form-component>
+      {% else %}
+        <a href="{{ product.url }}">Choose Options</a>
+      {% endif %}
+    {% else %}
+      <span>Sold Out</span>
+    {% endif %}
+  </div>
+</article>

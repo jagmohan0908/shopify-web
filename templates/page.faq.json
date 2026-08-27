@@ -1,0 +1,25 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "info": {
+      "type": "bookstore-info-page",
+      "settings": {
+        "eyebrow": "FAQ",
+        "heading": "Frequently Asked Questions",
+        "copy": "Answers for readers, publishers, and institutional buyers.",
+        "default_content": "FAQ content is ready from the uploaded file."
+      }
+    }
+  },
+  "order": [
+    "info"
+  ]
+}

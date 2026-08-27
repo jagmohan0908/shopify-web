@@ -1,0 +1,125 @@
+<div
+  class="sb-home sb-theme--{{ section.settings.color_theme }}"
+  style="
+    --sb-section-bg: {{ section.settings.background_color }};
+    --sb-section-heading: {{ section.settings.heading_color }};
+    --sb-section-text: {{ section.settings.text_color }};
+    --sb-section-accent: {{ section.settings.accent_color }};
+    --sb-section-card-bg: {{ section.settings.card_background }};
+    --sb-section-button-bg: {{ section.settings.button_background }};
+    --sb-section-button-text: {{ section.settings.button_text_color }};
+    --sb-footer-logo-width: {{ section.settings.logo_width }}px;
+  "
+>
+  <footer class="sb-footer">
+    <div class="sb-container sb-footer__grid">
+      <div>
+        {% if section.settings.footer_logo != blank %}
+          <a class="sb-footer__logo" href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }}">
+            {{ section.settings.footer_logo | image_url: width: 520 | image_tag: loading: 'lazy', widths: '120, 180, 240, 320, 420, 520', sizes: '(max-width: 749px) 180px, var(--sb-footer-logo-width)', alt: section.settings.brand_name | default: shop.name }}
+          </a>
+        {% endif %}
+        {% if section.settings.show_brand_name or section.settings.footer_logo == blank %}
+          <strong class="sb-footer__brand">{{ section.settings.brand_name | default: shop.name }}</strong>
+        {% endif %}
+        {% if section.settings.brand_text != blank %}<p>{{ section.settings.brand_text }}</p>{% endif %}
+        {% if section.settings.reels_url != blank %}
+          <a class="sb-footer__reels" href="{{ section.settings.reels_url }}" target="_blank" rel="noopener">
+            {{ section.settings.reels_label | default: 'Instagram Reels' }}
+          </a>
+        {% endif %}
+      </div>
+      {% for block in section.blocks %}
+        <div {{ block.shopify_attributes }}>
+          <h3>{{ block.settings.heading }}</h3>
+          {% if block.settings.link_1_label != blank %}<a href="{{ block.settings.link_1_url }}">{{ block.settings.link_1_label }}</a>{% endif %}
+          {% if block.settings.link_2_label != blank %}<a href="{{ block.settings.link_2_url }}">{{ block.settings.link_2_label }}</a>{% endif %}
+          {% if block.settings.link_3_label != blank %}<a href="{{ block.settings.link_3_url }}">{{ block.settings.link_3_label }}</a>{% endif %}
+          {% if block.settings.link_4_label != blank %}<a href="{{ block.settings.link_4_url }}">{{ block.settings.link_4_label }}</a>{% endif %}
+        </div>
+      {% endfor %}
+      {% if section.settings.show_newsletter %}
+        <div>
+          <h3>{{ section.settings.newsletter_heading }}</h3>
+          <p>{{ section.settings.newsletter_text }}</p>
+          {% form 'customer', class: 'sb-footer-form' %}
+            <input type="hidden" name="contact[tags]" value="newsletter">
+            <input type="email" name="contact[email]" placeholder="{{ section.settings.newsletter_placeholder }}" aria-label="{{ section.settings.newsletter_placeholder }}" required>
+            <button type="submit">{{ section.settings.newsletter_button }}</button>
+          {% endform %}
+        </div>
+      {% endif %}
+    </div>
+    {% if section.settings.bottom_text != blank %}<p class="sb-footer__bottom">{{ section.settings.bottom_text }}</p>{% endif %}
+  </footer>
+</div>
+
+{% schema %}
+{
+  "name": "Bookstore custom footer",
+  "tag": "section",
+  "class": "section-bookstore-custom-footer",
+  "settings": [
+    { "type": "image_picker", "id": "footer_logo", "label": "Footer logo" },
+    { "type": "range", "id": "logo_width", "label": "Footer logo width", "min": 80, "max": 320, "step": 10, "unit": "px", "default": 180 },
+    { "type": "checkbox", "id": "show_brand_name", "label": "Show brand name under logo", "default": false },
+    { "type": "text", "id": "brand_name", "label": "Brand name" },
+    { "type": "textarea", "id": "brand_text", "label": "Brand text", "default": "Connecting readers with timeless knowledge and modern narratives." },
+    { "type": "text", "id": "reels_label", "label": "Reels link label", "default": "Instagram Reels" },
+    { "type": "url", "id": "reels_url", "label": "Reels URL / Instagram profile" },
+    { "type": "checkbox", "id": "show_newsletter", "label": "Show newsletter", "default": true },
+    { "type": "text", "id": "newsletter_heading", "label": "Newsletter heading", "default": "Newsletter" },
+    { "type": "textarea", "id": "newsletter_text", "label": "Newsletter text", "default": "Subscribe for literary news and exclusive releases." },
+    { "type": "text", "id": "newsletter_placeholder", "label": "Email placeholder", "default": "Email Address" },
+    { "type": "text", "id": "newsletter_button", "label": "Button label", "default": "Join" },
+    { "type": "text", "id": "bottom_text", "label": "Bottom text", "default": "© 2026 Books Bunnii. All rights reserved." },
+    {
+      "type": "select",
+      "id": "color_theme",
+      "label": "Color theme",
+      "options": [
+        { "value": "paper", "label": "Paper" },
+        { "value": "soft-blue", "label": "Soft blue" },
+        { "value": "crimson", "label": "Crimson" },
+        { "value": "navy", "label": "Navy" },
+        { "value": "custom", "label": "Custom" }
+      ],
+      "default": "custom"
+    },
+    { "type": "color", "id": "background_color", "label": "Custom background", "default": "#d5e3fd" },
+    { "type": "color", "id": "heading_color", "label": "Custom heading color", "default": "#0d1c2f" },
+    { "type": "color", "id": "text_color", "label": "Custom text color", "default": "#45464d" },
+    { "type": "color", "id": "accent_color", "label": "Custom accent color", "default": "#b6191a" },
+    { "type": "color", "id": "card_background", "label": "Custom input background", "default": "#eff4ff" },
+    { "type": "color", "id": "button_background", "label": "Custom button background", "default": "#000000" },
+    { "type": "color", "id": "button_text_color", "label": "Custom button text", "default": "#ffffff" }
+  ],
+  "blocks": [
+    {
+      "type": "link_column",
+      "name": "Link column",
+      "settings": [
+        { "type": "text", "id": "heading", "label": "Heading", "default": "Discover" },
+        { "type": "text", "id": "link_1_label", "label": "Link 1 label", "default": "Browse Categories" },
+        { "type": "url", "id": "link_1_url", "label": "Link 1 URL" },
+        { "type": "text", "id": "link_2_label", "label": "Link 2 label", "default": "Bestsellers" },
+        { "type": "url", "id": "link_2_url", "label": "Link 2 URL" },
+        { "type": "text", "id": "link_3_label", "label": "Link 3 label" },
+        { "type": "url", "id": "link_3_url", "label": "Link 3 URL" },
+        { "type": "text", "id": "link_4_label", "label": "Link 4 label" },
+        { "type": "url", "id": "link_4_url", "label": "Link 4 URL" }
+      ]
+    }
+  ],
+  "max_blocks": 4,
+  "presets": [
+    {
+      "name": "Bookstore custom footer",
+      "blocks": [
+        { "type": "link_column", "settings": { "heading": "Discover", "link_1_label": "Browse Categories", "link_2_label": "Bestsellers", "link_3_label": "Publishers", "link_4_label": "Authors" } },
+        { "type": "link_column", "settings": { "heading": "Support", "link_1_label": "Customer Support", "link_2_label": "Order Tracking", "link_3_label": "Shipping Policy", "link_4_label": "Return Center" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

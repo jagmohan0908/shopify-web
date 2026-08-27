@@ -1,0 +1,79 @@
+<div
+  class="sb-home sb-theme--{{ section.settings.color_theme }}"
+  style="
+    --sb-section-bg: {{ section.settings.background_color }};
+    --sb-section-heading: {{ section.settings.heading_color }};
+    --sb-section-text: {{ section.settings.text_color }};
+    --sb-section-accent: {{ section.settings.accent_color }};
+    --sb-section-card-bg: {{ section.settings.card_background }};
+  "
+>
+  <section class="sb-trust" aria-label="{{ section.settings.heading | escape }}">
+    {% for block in section.blocks %}
+      <div {{ block.shopify_attributes }}>
+        <span class="{% if block.settings.icon_image != blank %}sb-trust__icon--image{% endif %}" aria-hidden="true">
+          {% if block.settings.icon_image != blank %}
+            {{ block.settings.icon_image | image_url: width: 120 | image_tag: loading: 'lazy', widths: '60, 90, 120', sizes: '34px', alt: block.settings.heading }}
+          {% else %}
+            {{ block.settings.icon_text | default: forloop.index }}
+          {% endif %}
+        </span>
+        <strong>{{ block.settings.heading }}</strong>
+        <small>{{ block.settings.text }}</small>
+      </div>
+    {% endfor %}
+  </section>
+</div>
+
+{% schema %}
+{
+  "name": "Trust promises",
+  "tag": "section",
+  "class": "section-trust-promises",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Accessibility label", "default": "Store promises" },
+    {
+      "type": "select",
+      "id": "color_theme",
+      "label": "Color theme",
+      "options": [
+        { "value": "paper", "label": "Paper" },
+        { "value": "soft-blue", "label": "Soft blue" },
+        { "value": "crimson", "label": "Crimson" },
+        { "value": "navy", "label": "Navy" },
+        { "value": "custom", "label": "Custom" }
+      ],
+      "default": "custom"
+    },
+    { "type": "color", "id": "background_color", "label": "Custom background", "default": "#eff4ff" },
+    { "type": "color", "id": "heading_color", "label": "Custom heading color", "default": "#0d1c2f" },
+    { "type": "color", "id": "text_color", "label": "Custom text color", "default": "#45464d" },
+    { "type": "color", "id": "accent_color", "label": "Custom accent color", "default": "#6683b3" },
+    { "type": "color", "id": "card_background", "label": "Custom icon background", "default": "#ffffff" }
+  ],
+  "blocks": [
+    {
+      "type": "promise",
+      "name": "Promise",
+      "settings": [
+        { "type": "image_picker", "id": "icon_image", "label": "Icon image" },
+        { "type": "text", "id": "icon_text", "label": "Icon text/number" },
+        { "type": "text", "id": "heading", "label": "Heading", "default": "Trusted by Readers" },
+        { "type": "text", "id": "text", "label": "Text", "default": "Join over 500,000 book lovers." }
+      ]
+    }
+  ],
+  "max_blocks": 6,
+  "presets": [
+    {
+      "name": "Trust promises",
+      "blocks": [
+        { "type": "promise", "settings": { "icon_text": "1", "heading": "Trusted by Readers", "text": "Join over 500,000 book lovers." } },
+        { "type": "promise", "settings": { "icon_text": "2", "heading": "Originality", "text": "100% authentic curated editions." } },
+        { "type": "promise", "settings": { "icon_text": "3", "heading": "Fast Delivery", "text": "Reliable shipping to your doorstep." } },
+        { "type": "promise", "settings": { "icon_text": "4", "heading": "Quality Guaranteed", "text": "Curated by literary experts." } }
+      ]
+    }
+  ]
+}
+{% endschema %}

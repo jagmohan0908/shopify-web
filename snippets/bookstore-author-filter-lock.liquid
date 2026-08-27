@@ -1,0 +1,23 @@
+{% liquid
+  assign locked_author = request.params.author | default: request.params['filter.p.m.custom.author'] | strip
+
+  if locked_author == blank and filters != blank
+    for filter in filters
+      assign filter_label = filter.label | downcase
+      if filter.param_name contains 'author' or filter_label contains 'author'
+        if filter.active_values.size > 0
+          assign locked_author = filter.active_values.first.value | default: filter.active_values.first.label | strip
+        endif
+        break
+      endif
+    endfor
+  endif
+%}
+
+{% if template.name == 'search' and locked_author != blank and locked_author != '*' %}
+  <input type="hidden" name="view" value="author">
+  <input type="hidden" name="type" value="product">
+  <input type="hidden" name="q" value="*">
+  <input type="hidden" name="author" value="{{ locked_author | escape }}">
+  <input type="hidden" name="filter.p.m.custom.author" value="{{ locked_author | escape }}">
+{% endif %}

@@ -1,0 +1,21 @@
+{% layout none %}
+{% paginate search.results by 250 %}
+{
+  "page": {{ paginate.current_page | json }},
+  "pages": {{ paginate.pages | json }},
+  "count": {{ search.results_count | json }},
+  "authors": [
+    {%- assign printed_author = false -%}
+    {%- for result in search.results -%}
+      {%- if result.object_type == 'product' -%}
+        {%- assign author_name = result.metafields.custom.author.value | default: result.metafields.custom.author | default: result.metafields.custom.author_name_and_about.value | default: result.metafields.book.author.value | strip -%}
+        {%- if author_name != blank -%}
+          {%- if printed_author -%},{%- endif -%}
+          { "name": {{ author_name | json }} }
+          {%- assign printed_author = true -%}
+        {%- endif -%}
+      {%- endif -%}
+    {%- endfor -%}
+  ]
+}
+{% endpaginate %}

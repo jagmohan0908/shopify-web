@@ -1,0 +1,67 @@
+{% liquid
+  assign requested_author = request.params.author | default: request.params['filter.p.m.custom.author'] | default: search.terms | strip
+  if requested_author == '*' or requested_author == blank
+    assign requested_author = 'Author'
+  endif
+
+  if requested_author == 'Author'
+    for item in search.results
+      if item.object_type == 'product'
+        assign detected_author = item.metafields.custom.author.value | default: item.metafields.custom.author | default: item.metafields.custom.author_name_and_about.value | default: item.metafields.book.author.value | strip
+        if detected_author != blank
+          assign requested_author = detected_author
+          break
+        endif
+      endif
+    endfor
+  endif
+%}
+
+<div
+  class="bookstore-shell bookstore-category bookstore-author-search"
+  style="
+    --bs-cat-bg: {{ section.settings.background_color }};
+    --bs-cat-card: {{ section.settings.card_background }};
+    --bs-cat-ink: {{ section.settings.heading_color }};
+    --bs-cat-text: {{ section.settings.text_color }};
+    --bs-cat-accent: {{ section.settings.accent_color }};
+    --bs-cat-line: {{ section.settings.border_color }};
+  "
+>
+  <section class="bookstore-collection-hero bookstore-category-hero bookstore-author-search__hero">
+    <div class="bookstore-container">
+      <nav class="bookstore-category-breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ routes.root_url }}">Home</a> /
+        <a href="{{ routes.search_url }}?view=authors&amp;q=*">Authors</a> /
+        <span>{{ requested_author }}</span>
+      </nav>
+      <div class="bookstore-eyebrow">{{ section.settings.eyebrow }}</div>
+      <h1 class="bookstore-heading">{{ requested_author }}</h1>
+      <p class="bookstore-copy bookstore-category-description">
+        Browse available titles by {{ requested_author }}. Use the filters below to narrow the catalogue.
+      </p>
+      <div class="bookstore-category-meta">
+        <span>{{ search.results_count }} titles</span>
+      </div>
+    </div>
+  </section>
+</div>
+
+{% schema %}
+{
+  "name": "Author collection header",
+  "enabled_on": { "templates": ["search"] },
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Author collection" },
+    { "type": "color", "id": "background_color", "label": "Background", "default": "#eff4ff" },
+    { "type": "color", "id": "card_background", "label": "Search background", "default": "#ffffff" },
+    { "type": "color", "id": "heading_color", "label": "Heading color", "default": "#0d1c2f" },
+    { "type": "color", "id": "text_color", "label": "Text color", "default": "#45464d" },
+    { "type": "color", "id": "accent_color", "label": "Accent color", "default": "#b6191a" },
+    { "type": "color", "id": "border_color", "label": "Border color", "default": "#c6c6cd" }
+  ],
+  "presets": [
+    { "name": "Author collection header" }
+  ]
+}
+{% endschema %}
