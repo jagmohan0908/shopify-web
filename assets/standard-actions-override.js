@@ -447,6 +447,32 @@ function getBookstoreSelectedCategoryHandles(url = new URL(window.location.href)
   });
 }
 
+function normalizeAllCollectionCategoryUrl() {
+  const current = new URL(window.location.href);
+  if (current.pathname !== '/collections/all') return;
+
+  const selectedCategories = getBookstoreExtraCategoryFilters(current);
+  if (!selectedCategories.length) return;
+
+  const targetHandle = selectedCategories.find((handle) => handle && handle !== 'all');
+  if (!targetHandle) return;
+
+  const next = new URL(current.href);
+  const remainingCategories = selectedCategories.filter((handle) => handle && handle !== targetHandle);
+
+  next.pathname = `/collections/${encodeURIComponent(targetHandle)}`;
+  next.searchParams.delete('bookstore_category');
+  remainingCategories.forEach((handle) => {
+    appendUniqueBookstoreSearchParam(next.searchParams, 'bookstore_category', handle);
+  });
+  next.searchParams.delete('page');
+  next.searchParams.delete('section_id');
+
+  window.location.replace(`${next.pathname}${next.search}${next.hash}`);
+}
+
+normalizeAllCollectionCategoryUrl();
+
 function productItemMatchesCollectionHandle(item, handle) {
   const normalizedHandle = normalizeCollectionSearchText(handle);
   if (!normalizedHandle) return true;
