@@ -509,6 +509,52 @@ html.bookstore-filtering-pending main[data-template^="search"] .product-grid {
   opacity: 0;
 }
 
+html.bookstore-filtering-pending main[data-template^="collection"] .bookstore-product-grid-skeleton + .product-grid {
+  display: none !important;
+}
+
+.bookstore-product-grid-skeleton {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 26px 24px;
+  width: 100%;
+}
+
+.bookstore-product-grid-skeleton[hidden] {
+  display: none;
+}
+
+.bookstore-product-grid-skeleton__item {
+  position: relative;
+  display: block;
+  min-height: 330px;
+  overflow: hidden;
+  border: 1px solid rgba(198, 198, 205, 0.55);
+  border-radius: 6px;
+  background:
+    linear-gradient(#edf2fb, #edf2fb) 16px 16px / calc(100% - 32px) 210px no-repeat,
+    linear-gradient(#e2e8f4, #e2e8f4) 16px 244px / 52% 12px no-repeat,
+    linear-gradient(#e2e8f4, #e2e8f4) 16px 268px / 78% 14px no-repeat,
+    linear-gradient(#dbe3f1, #dbe3f1) 16px 300px / 44% 14px no-repeat,
+    #fff;
+  box-shadow: 0 10px 24px rgba(13, 28, 47, 0.06);
+}
+
+.bookstore-product-grid-skeleton__item::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent);
+  animation: bookstore-product-skeleton 1.12s ease-in-out infinite;
+}
+
+@keyframes bookstore-product-skeleton {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 html.bookstore-filtering-pending main[data-template^="collection"] [data-bookstore-visible-count],
 html.bookstore-filtering-pending main[data-template^="collection"] .products-count-wrapper span[role="status"] {
   position: relative;

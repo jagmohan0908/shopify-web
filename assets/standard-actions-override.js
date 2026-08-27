@@ -496,8 +496,29 @@ function setCollectionVisibleCount(count) {
   });
 }
 
+function toggleBookstoreProductGridSkeleton(isLoading) {
+  const grid = getCollectionSearchGrid();
+  if (!grid) return;
+
+  let skeleton = grid.parentElement?.querySelector('[data-bookstore-product-grid-skeleton]');
+
+  if (isLoading && !skeleton) {
+    skeleton = document.createElement('div');
+    skeleton.className = 'bookstore-product-grid-skeleton';
+    skeleton.setAttribute('data-bookstore-product-grid-skeleton', '');
+    skeleton.setAttribute('aria-hidden', 'true');
+    skeleton.innerHTML = Array.from({ length: 12 }, () => '<span class="bookstore-product-grid-skeleton__item"></span>').join('');
+    grid.insertAdjacentElement('beforebegin', skeleton);
+  }
+
+  if (skeleton) {
+    skeleton.hidden = !isLoading;
+  }
+}
+
 function setBookstoreFilterLoadingState(isLoading) {
   document.documentElement.classList.toggle('bookstore-filtering-pending', isLoading);
+  toggleBookstoreProductGridSkeleton(isLoading);
 
   document.querySelectorAll('main[data-template^="collection"] [data-bookstore-visible-count]').forEach((node) => {
     if (isLoading) {
@@ -550,6 +571,8 @@ async function loadAllCollectionPagesForVendorFilter() {
   if (!selectedVendors.length) return;
 
   const grid = getCollectionSearchGrid();
+  const resultsList = document.querySelector('main[data-template^="collection"] results-list[section-id]');
+  const sectionId = resultsList?.getAttribute('section-id') || '';
   const currentCategory = getBookstoreCollectionHandleFromPath(window.location.pathname);
   const categoryKey = getBookstoreExtraCategoryFilters().join('|');
   const loadedKey = `${selectedVendors.join('|')}:${currentCategory}:${categoryKey}`;
@@ -566,6 +589,9 @@ async function loadAllCollectionPagesForVendorFilter() {
     const url = new URL('/collections/vendors', window.location.origin);
     url.searchParams.set('q', vendorName);
     if (page > 1) url.searchParams.set('page', String(page));
+    if (sectionId) url.searchParams.set('section_id', sectionId);
+    url.searchParams.set('_fd', '0');
+    url.searchParams.set('pb', '0');
 
     try {
       const response = await fetch(url.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
@@ -596,7 +622,7 @@ async function loadAllCollectionPagesForVendorFilter() {
   });
 
   let nextPageIndex = 0;
-  const workerCount = Math.min(6, Math.max(1, remainingPages.length));
+  const workerCount = Math.min(24, Math.max(1, remainingPages.length));
   await Promise.all(
     Array.from({ length: workerCount }, async () => {
       while (nextPageIndex < remainingPages.length) {
