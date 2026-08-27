@@ -451,6 +451,10 @@ function productItemMatchesActivePrice(item, url = new URL(window.location.href)
   return true;
 }
 
+function hasBookstoreActivePriceFilter(url = new URL(window.location.href)) {
+  return getBookstoreActivePriceValue('filter.v.price.gte', url) !== null || getBookstoreActivePriceValue('filter.v.price.lte', url) !== null;
+}
+
 function getBookstoreCollectionHandleFromPath(pathname) {
   const pathParts = String(pathname || '').split('/').filter(Boolean);
   if (pathParts[0] !== 'collections') return '';
@@ -597,6 +601,7 @@ function filterExistingCollectionItemsByVendor(vendor) {
   const wrapper = document.querySelector('main[data-template^="collection"] collection-component');
   const selectedVendors = getCollectionVendorFilters();
   const selectedCategories = getBookstoreExtraCategoryFilters();
+  const hasActivePrice = hasBookstoreActivePriceFilter();
   let visibleCount = 0;
 
   items.forEach((item) => {
@@ -611,16 +616,17 @@ function filterExistingCollectionItemsByVendor(vendor) {
   if (wrapper) {
     wrapper.classList.toggle('bookstore-collection-vendor-filter-active', selectedVendors.length > 0);
     wrapper.classList.toggle('bookstore-collection-category-filter-active', selectedCategories.length > 0);
+    wrapper.classList.toggle('bookstore-collection-price-filter-active', hasActivePrice);
   }
 
   const message = ensureCollectionSearchMessage(grid);
 
   if (message) {
     message.textContent = selectedVendors.length ? `No books found for selected publishers in this collection.` : 'No books found for selected filters in this collection.';
-    message.hidden = (selectedVendors.length === 0 && selectedCategories.length === 0) || visibleCount > 0;
+    message.hidden = (selectedVendors.length === 0 && selectedCategories.length === 0 && !hasActivePrice) || visibleCount > 0;
   }
 
-  setCollectionVisibleCount(selectedVendors.length || selectedCategories.length ? visibleCount : items.length);
+  setCollectionVisibleCount(selectedVendors.length || selectedCategories.length || hasActivePrice ? visibleCount : items.length);
 
   return visibleCount;
 }
@@ -880,15 +886,26 @@ function initBookstoreCollectionExtraCategoryFilter() {
   initBookstoreVendorFilterObserver();
 }
 
+function initBookstoreCollectionPriceFilter() {
+  if (!hasBookstoreActivePriceFilter()) return;
+
+  filterExistingCollectionItemsByVendor(getCollectionVendorFilter());
+  initBookstoreVendorFilterObserver();
+  renderBookstoreActiveQueryPills();
+}
+
 function initBookstoreVendorFilterObserver() {
   const vendor = getCollectionVendorFilter();
   const selectedCategories = getBookstoreExtraCategoryFilters();
-  if ((!vendor && !selectedCategories.length) || window.__bookstoreVendorFilterObserverReady) return;
+  const hasActivePrice = hasBookstoreActivePriceFilter();
+  if (!vendor && !selectedCategories.length && !hasActivePrice) return;
 
   const grid = getCollectionSearchGrid();
   if (!grid) return;
+  if (window.__bookstoreVendorFilterObserverReady && window.__bookstoreVendorFilterObserverGrid === grid) return;
 
   window.__bookstoreVendorFilterObserverReady = true;
+  window.__bookstoreVendorFilterObserverGrid = grid;
   let timer = 0;
 
   const observer = new MutationObserver(() => {
@@ -973,6 +990,22 @@ if (document.readyState === 'loading') {
 }
 
 document.addEventListener('shopify:section:load', initBookstoreCollectionExtraCategoryFilter);
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initBookstoreCollectionPriceFilter, { once: true });
+} else {
+  initBookstoreCollectionPriceFilter();
+}
+
+document.addEventListener('shopify:section:load', initBookstoreCollectionPriceFilter);
+window.addEventListener('popstate', initBookstoreCollectionPriceFilter);
+document.addEventListener('bookstore:filters-updated', () => {
+  window.setTimeout(() => {
+    initBookstoreCollectionVendorFilter();
+    initBookstoreCollectionExtraCategoryFilter();
+    initBookstoreCollectionPriceFilter();
+  }, 0);
+});
 
 /**
  * Collection/vendor hero search should filter the products on the same page.

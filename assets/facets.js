@@ -184,6 +184,9 @@ class FacetsFormComponent extends Component {
   updateFilters = () => {
     this.#updateURLHash();
     const renderPromise = this.#updateSection();
+    renderPromise.finally(() => {
+      document.dispatchEvent(new CustomEvent('bookstore:filters-updated'));
+    });
     if (this.dataset.pageType === 'search') {
       this.#dispatchSearchUpdateEvent(renderPromise);
     } else {
@@ -248,6 +251,9 @@ class FacetsFormComponent extends Component {
     const nextUrl = mergeBookstorePersistentQueryParams(url);
     history.pushState('', '', nextUrl.toString());
     const renderPromise = this.#updateSection();
+    renderPromise.finally(() => {
+      document.dispatchEvent(new CustomEvent('bookstore:filters-updated'));
+    });
     if (this.dataset.pageType === 'search') {
       this.#dispatchSearchUpdateEvent(renderPromise);
     } else {
