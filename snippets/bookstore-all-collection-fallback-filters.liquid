@@ -5,11 +5,31 @@
   assign current_format = request.params['filter.p.m.custom.format']
   assign current_availability = request.params['filter.v.availability']
 
+  assign author_filter = blank
+  if filters != blank
+    for filter in filters
+      assign filter_label = filter.label | downcase
+      if filter.param_name contains 'author' or filter_label contains 'author'
+        assign author_filter = filter
+        break
+      endif
+    endfor
+  endif
+
+  assign author_values = ''
   assign language_values = ''
   assign format_values = ''
   for item in collections.all.products limit: 80
+    assign item_author = item.metafields.custom.author.value | default: item.metafields.custom.author
     assign item_language = item.metafields.custom.language.value | default: item.metafields.custom.language
     assign item_format = item.metafields.custom.format.value | default: item.metafields.custom.cover_type.value | default: item.metafields.custom.cover_type
+
+    if item_author != blank
+      assign token = '|' | append: item_author | append: '|'
+      unless author_values contains token
+        assign author_values = author_values | append: token
+      endunless
+    endif
 
     if item_language != blank
       assign token = '|' | append: item_language | append: '|'
@@ -26,6 +46,7 @@
     endif
   endfor
 
+  assign author_list = author_values | split: '|'
   assign language_list = language_values | split: '|'
   assign format_list = format_values | split: '|'
 %}
@@ -56,6 +77,35 @@
       </label>
     {% endfor %}
   </details>
+
+  {% if author_filter != blank and author_filter.values.size > 0 %}
+    <details open>
+      <summary>Author</summary>
+      {% for author_value in author_filter.values limit: 80 %}
+        {% assign author_name = author_value.label | default: author_value.value | strip %}
+        {% assign author_value_raw = author_value.value | default: author_name %}
+        {% if author_name != blank and author_value.count > 0 %}
+          <label>
+            <input type="checkbox" name="{{ author_filter.param_name }}" value="{{ author_value_raw | escape }}" {% if current_author == author_value_raw or current_author == author_name %}checked{% endif %} onchange="this.form.submit()">
+            {{ author_name }}
+          </label>
+        {% endif %}
+      {% endfor %}
+    </details>
+  {% elsif author_values != blank %}
+    <details open>
+      <summary>Author</summary>
+      {% for value in author_list limit: 80 %}
+        {% assign clean_value = value | strip %}
+        {% if clean_value != blank %}
+          <label>
+            <input type="checkbox" name="filter.p.m.custom.author" value="{{ clean_value | escape }}" {% if current_author == clean_value %}checked{% endif %} onchange="this.form.submit()">
+            {{ clean_value }}
+          </label>
+        {% endif %}
+      {% endfor %}
+    </details>
+  {% endif %}
 
   {% if language_values != blank %}
     <details open>

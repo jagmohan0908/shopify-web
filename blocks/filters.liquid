@@ -264,7 +264,7 @@
                   section_id: section.id
                 %}
                 {% if rendered_filters_stripped == blank and page_type == 'collection' and collection.handle == 'all' %}
-                  {% render 'bookstore-all-collection-fallback-filters' %}
+                  {% render 'bookstore-all-collection-fallback-filters', filters: filters %}
                 {% elsif block_settings.filter_style == 'horizontal' %}
                   {% liquid
                     assign more_attributes = 'on:click="#filters-drawer/toggle"'
@@ -550,7 +550,7 @@
                   section_id: section.id
                 %}
                 {% if rendered_drawer_filters_stripped == blank and page_type == 'collection' and collection.handle == 'all' %}
-                  {% render 'bookstore-all-collection-fallback-filters' %}
+                  {% render 'bookstore-all-collection-fallback-filters', filters: filters %}
                 {% else %}
                   {{ rendered_drawer_filters }}
                 {% endif %}
