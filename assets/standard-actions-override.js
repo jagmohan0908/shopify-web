@@ -166,6 +166,156 @@ function getCollectionVendorFilter() {
   return url.searchParams.get('filter.p.vendor') || '';
 }
 
+function uniqueBookstoreFilterValues(values) {
+  const seen = new Set();
+  const uniqueValues = [];
+
+  values.forEach((rawValue) => {
+    const value = String(rawValue || '').trim();
+    const key = normalizeCollectionSearchText(value);
+    if (!value || !key || seen.has(key)) return;
+
+    seen.add(key);
+    uniqueValues.push(value);
+  });
+
+  return uniqueValues;
+}
+
+function getCollectionVendorFilters(url = new URL(window.location.href)) {
+  const values = url.searchParams.getAll('filter.p.vendor');
+
+  if (url.pathname === '/collections/vendors') {
+    values.push(url.searchParams.get('q') || '');
+  }
+
+  return uniqueBookstoreFilterValues(values);
+}
+
+function isBookstoreCollectionPath(pathname) {
+  return String(pathname || '').split('/').filter(Boolean)[0] === 'collections';
+}
+
+function buildCleanBookstorePublisherFilterUrl(selectedVendors, sourceUrl = new URL(window.location.href), forceAllCollection = false) {
+  const vendors = uniqueBookstoreFilterValues(selectedVendors);
+  const shouldUseAllCollection = forceAllCollection || sourceUrl.pathname === '/collections/vendors';
+  const next = new URL(shouldUseAllCollection ? '/collections/all' : sourceUrl.pathname, window.location.origin);
+
+  sourceUrl.searchParams.forEach((value, name) => {
+    const cleanValue = String(value || '').trim();
+    if (!cleanValue || cleanValue === '*') return;
+    if (name === 'page' || name === 'section_id') return;
+    if (name === 'filter.p.vendor') return;
+    if (name === 'q' || name === 'type' || name === 'view' || name === 'options[prefix]') return;
+
+    if (
+      name === 'sort_by' ||
+      name === 'collection_search' ||
+      name === 'author' ||
+      name === 'bookstore_category' ||
+      name.startsWith('filter.')
+    ) {
+      next.searchParams.append(name, cleanValue);
+    }
+  });
+
+  vendors.forEach((vendor) => {
+    next.searchParams.append('filter.p.vendor', vendor);
+  });
+
+  return next;
+}
+
+function getNextBookstorePublisherFilterUrl(input) {
+  const current = new URL(window.location.href);
+  if (!isBookstoreCollectionPath(current.pathname)) return null;
+
+  const currentVendors = getCollectionVendorFilters(current);
+  const formVendors = Array.from(input.form?.querySelectorAll('input[name="filter.p.vendor"]:checked') || [])
+    .map((checkbox) => checkbox.value);
+  const changedVendor = String(input.value || '').trim();
+  const selectedVendors = uniqueBookstoreFilterValues([...currentVendors, ...formVendors]);
+
+  if (changedVendor) {
+    const changedKey = normalizeCollectionSearchText(changedVendor);
+    const existingIndex = selectedVendors.findIndex((vendor) => normalizeCollectionSearchText(vendor) === changedKey);
+
+    if (input.checked && existingIndex === -1) {
+      selectedVendors.push(changedVendor);
+    } else if (!input.checked && existingIndex !== -1) {
+      selectedVendors.splice(existingIndex, 1);
+    }
+  }
+
+  return buildCleanBookstorePublisherFilterUrl(selectedVendors, current, current.pathname === '/collections/vendors' || selectedVendors.length > 1);
+}
+
+function syncBookstorePublisherFilterInputs(root = document) {
+  const scope = root instanceof Element ? root : document;
+  const selectedKeys = new Set(getCollectionVendorFilters().map((vendor) => normalizeCollectionSearchText(vendor)));
+
+  scope.querySelectorAll?.('input[name="filter.p.vendor"]').forEach((input) => {
+    if (!(input instanceof HTMLInputElement)) return;
+
+    const isSelected = selectedKeys.has(normalizeCollectionSearchText(input.value));
+    input.checked = isSelected;
+    input.closest('.bookstore-collection-facet__link')?.classList.toggle('is-active', isSelected);
+  });
+}
+
+function cleanupBookstorePublisherFilterUrl() {
+  const current = new URL(window.location.href);
+  if (!isBookstoreCollectionPath(current.pathname)) return;
+
+  const vendors = getCollectionVendorFilters(current);
+  const shouldNormalize =
+    current.searchParams.getAll('filter.p.vendor').length !== vendors.length ||
+    Array.from(current.searchParams.entries()).some(([name, value]) => {
+      const cleanValue = String(value || '').trim();
+      return !cleanValue || cleanValue === '*' || name === 'type' || name === 'view' || name === 'options[prefix]';
+    });
+
+  if (!shouldNormalize || (current.pathname === '/collections/vendors' && vendors.length <= 1 && !current.searchParams.has('filter.p.vendor'))) return;
+
+  const next = buildCleanBookstorePublisherFilterUrl(vendors, current, current.pathname === '/collections/vendors' && vendors.length > 1);
+  window.history.replaceState({}, '', `${next.pathname}${next.search}`);
+}
+
+function initBookstorePublisherFilterControls(root = document) {
+  if (root === document) cleanupBookstorePublisherFilterUrl();
+  syncBookstorePublisherFilterInputs(root);
+}
+
+document.addEventListener(
+  'change',
+  (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const input = target?.matches('input[name="filter.p.vendor"]') ? target : null;
+
+    if (!(input instanceof HTMLInputElement)) return;
+
+    const nextUrl = getNextBookstorePublisherFilterUrl(input);
+    if (!nextUrl) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    window.location.href = `${nextUrl.pathname}${nextUrl.search}`;
+  },
+  true
+);
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => initBookstorePublisherFilterControls(document), { once: true });
+} else {
+  initBookstorePublisherFilterControls(document);
+}
+
+document.addEventListener('shopify:section:load', (event) => {
+  initBookstorePublisherFilterControls(event.target instanceof Element ? event.target : document);
+});
+
 function getCollectionPublisherChipValue(link) {
   try {
     const parsed = new URL(link.href, window.location.origin);
@@ -209,6 +359,13 @@ function productItemMatchesVendor(item, vendor) {
   const searchableText = normalizeCollectionSearchText(rawText);
 
   return normalizedVendor.split(' ').filter(Boolean).every((token) => searchableText.includes(token));
+}
+
+function productItemMatchesSelectedVendors(item, url = new URL(window.location.href)) {
+  const vendors = getCollectionVendorFilters(url);
+  if (!vendors.length) return true;
+
+  return vendors.some((vendor) => productItemMatchesVendor(item, vendor));
 }
 
 function productItemMatchesSearch(item, query) {
@@ -300,11 +457,12 @@ function filterExistingCollectionItemsByVendor(vendor) {
   const items = getCollectionSearchItems();
   const grid = getCollectionSearchGrid();
   const wrapper = document.querySelector('main[data-template^="collection"] collection-component');
+  const selectedVendors = getCollectionVendorFilters();
   const selectedCategories = getBookstoreExtraCategoryFilters();
   let visibleCount = 0;
 
   items.forEach((item) => {
-    const isMatch = productItemMatchesVendor(item, vendor) && productItemMatchesExtraCategories(item);
+    const isMatch = productItemMatchesSelectedVendors(item) && productItemMatchesExtraCategories(item);
 
     item.hidden = !isMatch;
     item.style.display = isMatch ? '' : 'none';
@@ -313,18 +471,18 @@ function filterExistingCollectionItemsByVendor(vendor) {
   });
 
   if (wrapper) {
-    wrapper.classList.toggle('bookstore-collection-vendor-filter-active', Boolean(vendor));
+    wrapper.classList.toggle('bookstore-collection-vendor-filter-active', selectedVendors.length > 0);
     wrapper.classList.toggle('bookstore-collection-category-filter-active', selectedCategories.length > 0);
   }
 
   const message = ensureCollectionSearchMessage(grid);
 
   if (message) {
-    message.textContent = vendor ? `No books found for ${vendor} in this collection.` : 'No books found for selected filters in this collection.';
-    message.hidden = (!vendor && selectedCategories.length === 0) || visibleCount > 0;
+    message.textContent = selectedVendors.length ? `No books found for selected publishers in this collection.` : 'No books found for selected filters in this collection.';
+    message.hidden = (selectedVendors.length === 0 && selectedCategories.length === 0) || visibleCount > 0;
   }
 
-  setCollectionVisibleCount(vendor || selectedCategories.length ? visibleCount : items.length);
+  setCollectionVisibleCount(selectedVendors.length || selectedCategories.length ? visibleCount : items.length);
 
   return visibleCount;
 }
@@ -363,7 +521,7 @@ async function loadAllCollectionPagesForVendorFilter(vendor) {
       const html = await response.text();
       const doc = new DOMParser().parseFromString(html, 'text/html');
       const nextItems = Array.from(doc.querySelectorAll('.product-grid__item[data-product-id]'));
-      const matchingItems = nextItems.filter((item) => productItemMatchesVendor(item, vendor) && productItemMatchesExtraCategories(item));
+      const matchingItems = nextItems.filter((item) => productItemMatchesSelectedVendors(item) && productItemMatchesExtraCategories(item));
 
       matchedPages.push({ page, items: matchingItems });
     } catch (error) {
@@ -429,8 +587,8 @@ async function loadAllCollectionPagesForExtraCategoryFilters() {
 
   const resultsList = document.querySelector('main[data-template^="collection"] results-list[section-id]');
   const grid = getCollectionSearchGrid();
-  const vendor = getCollectionVendorFilter();
-  const loadedKey = `${selectedCategories.join('|')}:${vendor}`;
+  const vendorKey = getCollectionVendorFilters().join('|');
+  const loadedKey = `${selectedCategories.join('|')}:${vendorKey}`;
 
   if (!resultsList || !grid || grid.dataset.categoryFilterLoaded === loadedKey) return;
 
@@ -459,7 +617,7 @@ async function loadAllCollectionPagesForExtraCategoryFilters() {
       const html = await response.text();
       const doc = new DOMParser().parseFromString(html, 'text/html');
       const nextItems = Array.from(doc.querySelectorAll('.product-grid__item[data-product-id]'));
-      const matchingItems = nextItems.filter((item) => productItemMatchesVendor(item, vendor) && productItemMatchesExtraCategories(item));
+      const matchingItems = nextItems.filter((item) => productItemMatchesSelectedVendors(item) && productItemMatchesExtraCategories(item));
 
       matchedPages.push({ page, items: matchingItems });
     } catch (error) {
@@ -594,7 +752,7 @@ async function loadAllCollectionPagesForSearch(query) {
         if (!productId || existingIds.has(productId)) return;
         existingIds.add(productId);
 
-        if (productItemMatchesSearch(item, query) && productItemMatchesVendor(item, getCollectionVendorFilter()) && productItemMatchesExtraCategories(item)) {
+        if (productItemMatchesSearch(item, query) && productItemMatchesSelectedVendors(item) && productItemMatchesExtraCategories(item)) {
           item.hidden = false;
           item.style.display = '';
           grid.appendChild(item);
@@ -1134,7 +1292,7 @@ async function loadGlobalCollectionSearch(query) {
     const html = await response.text();
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const searchItems = Array.from(doc.querySelectorAll('main[data-template^="search"] .product-grid__item[data-product-id], .product-grid__item[data-product-id]'))
-      .filter((item) => productItemMatchesSearch(item, query) && productItemMatchesVendor(item, getCollectionVendorFilter()) && productItemMatchesExtraCategories(item));
+      .filter((item) => productItemMatchesSearch(item, query) && productItemMatchesSelectedVendors(item) && productItemMatchesExtraCategories(item));
     const resultCount = searchItems.length;
 
     grid.innerHTML = '';
@@ -1201,7 +1359,7 @@ async function applyCollectionPageSearch(query, updateUrl = true, loadAllPages =
   }
 
   items.forEach((item) => {
-    const isMatch = productItemMatchesSearch(item, query) && productItemMatchesVendor(item, getCollectionVendorFilter()) && productItemMatchesExtraCategories(item);
+    const isMatch = productItemMatchesSearch(item, query) && productItemMatchesSelectedVendors(item) && productItemMatchesExtraCategories(item);
 
     item.hidden = !isMatch;
     item.style.display = isMatch ? '' : 'none';
