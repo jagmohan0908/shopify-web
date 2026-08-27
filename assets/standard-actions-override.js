@@ -202,6 +202,11 @@ function productItemMatchesVendor(item, vendor) {
   const normalizedVendor = normalizeCollectionSearchText(vendor);
   if (!normalizedVendor) return true;
 
+  const itemVendor = item.getAttribute('data-bookstore-product-vendor');
+  if (itemVendor) {
+    return normalizeCollectionSearchText(itemVendor) === normalizedVendor;
+  }
+
   const rawText = item.getAttribute('data-collection-search-text') || item.textContent || '';
   const searchableText = normalizeCollectionSearchText(rawText);
 
@@ -349,6 +354,12 @@ async function applyCollectionVendorFilterFromURL(loadAllPages = false) {
   return visibleCount;
 }
 
+function initBookstoreCollectionVendorFilter() {
+  if (!getCollectionVendorFilter()) return;
+
+  applyCollectionVendorFilterFromURL(true);
+}
+
 async function loadAllCollectionPagesForSearch(query) {
   const normalizedQuery = normalizeCollectionSearchText(query);
   if (!normalizedQuery) return;
@@ -405,6 +416,14 @@ if (document.readyState === 'loading') {
 }
 
 document.addEventListener('shopify:section:load', initCollectionPublisherChips);
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initBookstoreCollectionVendorFilter, { once: true });
+} else {
+  initBookstoreCollectionVendorFilter();
+}
+
+document.addEventListener('shopify:section:load', initBookstoreCollectionVendorFilter);
 
 /**
  * Collection/vendor hero search should filter the products on the same page.
