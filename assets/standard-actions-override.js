@@ -580,6 +580,15 @@ function setCollectionVisibleCount(count) {
   });
 }
 
+function syncCollectionVisibleCountFromDom() {
+  const visibleCount = getCollectionSearchItems().filter((item) => {
+    return !item.hidden && window.getComputedStyle(item).display !== 'none';
+  }).length;
+
+  setCollectionVisibleCount(visibleCount);
+  return visibleCount;
+}
+
 function setBookstoreFilterLoadingState(isLoading) {
   document.documentElement.classList.toggle('bookstore-filtering-pending', isLoading);
 
@@ -657,6 +666,8 @@ async function loadAllCollectionPagesForVendorFilter() {
   if (!selectedVendors.length) return;
 
   const grid = getCollectionSearchGrid();
+  const resultsList = document.querySelector('main[data-template^="collection"] results-list[section-id]');
+  const sectionId = resultsList?.getAttribute('section-id') || '';
   const currentCategory = getBookstoreCollectionHandleFromPath(window.location.pathname);
   const categoryKey = getBookstoreExtraCategoryFilters().join('|');
   const loadedKey = `${selectedVendors.join('|')}:${currentCategory}:${categoryKey}`;
@@ -671,8 +682,10 @@ async function loadAllCollectionPagesForVendorFilter() {
   const existingIds = new Set(
     Array.from(grid.querySelectorAll('.product-grid__item[data-product-id]')).map((item) => item.getAttribute('data-product-id'))
   );
+  let hasRenderedFirstVendorBatch = false;
 
   const appendPageItems = async (pageItems) => {
+    const fragment = document.createDocumentFragment();
     let appendedCount = 0;
 
     for (const item of pageItems) {
@@ -684,16 +697,18 @@ async function loadAllCollectionPagesForVendorFilter() {
 
       item.hidden = false;
       item.style.display = '';
-      grid.appendChild(item);
+      fragment.appendChild(item);
       appendedCount += 1;
-
-      if (appendedCount % 8 === 0) {
-        await waitForBookstoreRenderFrame();
-      }
     }
 
     if (appendedCount > 0) {
+      grid.appendChild(fragment);
       filterExistingCollectionItemsByVendor(getCollectionVendorFilter());
+      syncCollectionVisibleCountFromDom();
+      if (!hasRenderedFirstVendorBatch) {
+        hasRenderedFirstVendorBatch = true;
+        setBookstoreFilterLoadingState(false);
+      }
       await waitForBookstoreRenderFrame();
     }
   };
@@ -702,9 +717,16 @@ async function loadAllCollectionPagesForVendorFilter() {
     const url = new URL('/collections/vendors', window.location.origin);
     url.searchParams.set('q', vendorName);
     if (page > 1) url.searchParams.set('page', String(page));
+    if (sectionId) url.searchParams.set('section_id', sectionId);
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 12000);
 
     try {
-      const response = await fetch(url.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const response = await fetch(url.toString(), {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        signal: controller.signal,
+      });
       if (!response.ok) return { vendorName, page, pages: 1, items: [] };
 
       const html = await response.text();
@@ -717,6 +739,8 @@ async function loadAllCollectionPagesForVendorFilter() {
     } catch (error) {
       // Keep current visible matches if one extra page request fails.
       return { vendorName, page, pages: 1, items: [] };
+    } finally {
+      window.clearTimeout(timeoutId);
     }
   }
 
@@ -735,6 +759,8 @@ async function loadAllCollectionPagesForVendorFilter() {
     await appendPageItems(result.items);
   }
 
+  setBookstoreFilterLoadingState(false);
+
   if (!remainingPages.length) {
     if (isCurrentRun()) {
       grid.dataset.vendorFilterLoaded = loadedKey;
@@ -745,23 +771,27 @@ async function loadAllCollectionPagesForVendorFilter() {
 
   window.setTimeout(async () => {
     let nextPageIndex = 0;
-    const workerCount = Math.min(2, Math.max(1, remainingPages.length));
+    const workerCount = Math.min(4, Math.max(1, remainingPages.length));
 
-    await Promise.all(
-      Array.from({ length: workerCount }, async () => {
-        while (nextPageIndex < remainingPages.length && isCurrentRun()) {
-          const task = remainingPages[nextPageIndex];
-          nextPageIndex += 1;
-          const result = await fetchVendorPage(task.vendorName, task.page);
-          await appendPageItems(result.items);
-        }
-      })
-    );
-
-    if (isCurrentRun()) {
-      grid.dataset.vendorFilterLoaded = loadedKey;
-      delete grid.dataset.vendorFilterLoading;
-      filterExistingCollectionItemsByVendor(getCollectionVendorFilter());
+    try {
+      await Promise.all(
+        Array.from({ length: workerCount }, async () => {
+          while (nextPageIndex < remainingPages.length && isCurrentRun()) {
+            const task = remainingPages[nextPageIndex];
+            nextPageIndex += 1;
+            const result = await fetchVendorPage(task.vendorName, task.page);
+            await appendPageItems(result.items);
+          }
+        })
+      );
+    } finally {
+      if (isCurrentRun()) {
+        grid.dataset.vendorFilterLoaded = loadedKey;
+        delete grid.dataset.vendorFilterLoading;
+        filterExistingCollectionItemsByVendor(getCollectionVendorFilter());
+        syncCollectionVisibleCountFromDom();
+        setBookstoreFilterLoadingState(false);
+      }
     }
   }, 50);
 }
