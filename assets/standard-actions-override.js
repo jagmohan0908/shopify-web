@@ -430,6 +430,17 @@ function productItemMatchesExtraCategories(item, url = new URL(window.location.h
   return selectedCategories.every((handle) => productItemMatchesCollectionHandle(item, handle));
 }
 
+function productItemMatchesCurrentCollectionPath(item, url = new URL(window.location.href)) {
+  const currentHandle = getBookstoreCollectionHandleFromPath(url.pathname);
+  if (!currentHandle) return true;
+
+  return productItemMatchesCollectionHandle(item, currentHandle);
+}
+
+function productItemMatchesActiveCategories(item, url = new URL(window.location.href)) {
+  return productItemMatchesCurrentCollectionPath(item, url) && productItemMatchesExtraCategories(item, url);
+}
+
 function getCollectionTotalCount() {
   const countNode = document.querySelector('main[data-template^="collection"] [data-bookstore-visible-count]');
   const rawCount = countNode?.getAttribute('data-bookstore-total-count') || countNode?.dataset.bookstoreOriginalCount || '';
@@ -464,7 +475,7 @@ function filterExistingCollectionItemsByVendor(vendor) {
   let visibleCount = 0;
 
   items.forEach((item) => {
-    const isMatch = productItemMatchesSelectedVendors(item) && productItemMatchesExtraCategories(item);
+    const isMatch = productItemMatchesSelectedVendors(item) && productItemMatchesActiveCategories(item);
 
     item.hidden = !isMatch;
     item.style.display = isMatch ? '' : 'none';
@@ -489,55 +500,64 @@ function filterExistingCollectionItemsByVendor(vendor) {
   return visibleCount;
 }
 
-async function loadAllCollectionPagesForVendorFilter(vendor) {
-  if (!vendor) return;
+async function loadAllCollectionPagesForVendorFilter() {
+  const selectedVendors = getCollectionVendorFilters();
+  if (!selectedVendors.length) return;
 
-  const resultsList = document.querySelector('main[data-template^="collection"] results-list[section-id]');
   const grid = getCollectionSearchGrid();
+  const currentCategory = getBookstoreCollectionHandleFromPath(window.location.pathname);
   const categoryKey = getBookstoreExtraCategoryFilters().join('|');
-  const loadedKey = `${vendor}:${categoryKey}`;
+  const loadedKey = `${selectedVendors.join('|')}:${currentCategory}:${categoryKey}`;
 
-  if (!resultsList || !grid || grid.dataset.vendorFilterLoaded === loadedKey) return;
-
-  const sectionId = resultsList.getAttribute('section-id');
-  const lastPage = Number(grid.dataset.lastPage || 1);
-
-  if (!sectionId || !lastPage || lastPage <= 1) {
-    grid.dataset.vendorFilterLoaded = vendor;
-    return;
-  }
+  if (!grid || grid.dataset.vendorFilterLoaded === loadedKey) return;
 
   const existingIds = new Set(
     Array.from(grid.querySelectorAll('.product-grid__item[data-product-id]')).map((item) => item.getAttribute('data-product-id'))
   );
 
   const matchedPages = [];
-  let nextPage = 2;
 
-  async function loadVendorPage(page) {
-    const url = buildBookstoreSectionPageUrl(page, sectionId);
+  async function fetchVendorPage(vendorName, page = 1) {
+    const url = new URL('/collections/vendors', window.location.origin);
+    url.searchParams.set('q', vendorName);
+    if (page > 1) url.searchParams.set('page', String(page));
+
     try {
       const response = await fetch(url.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-      if (!response.ok) return;
+      if (!response.ok) return { page, pages: 1, items: [] };
 
       const html = await response.text();
       const doc = new DOMParser().parseFromString(html, 'text/html');
       const nextItems = Array.from(doc.querySelectorAll('.product-grid__item[data-product-id]'));
-      const matchingItems = nextItems.filter((item) => productItemMatchesSelectedVendors(item) && productItemMatchesExtraCategories(item));
+      const matchingItems = nextItems.filter((item) => productItemMatchesSelectedVendors(item) && productItemMatchesActiveCategories(item));
+      const pages = Number(doc.querySelector('.product-grid[data-last-page]')?.getAttribute('data-last-page') || 1);
 
-      matchedPages.push({ page, items: matchingItems });
+      return { page, pages, items: matchingItems };
     } catch (error) {
       // Keep current visible matches if one extra page request fails.
+      return { page, pages: 1, items: [] };
     }
   }
 
-  const workerCount = Math.min(6, Math.max(1, lastPage - 1));
+  const firstPages = await Promise.all(selectedVendors.map((vendorName) => fetchVendorPage(vendorName, 1)));
+  firstPages.forEach((result) => matchedPages.push(result));
+
+  const remainingPages = [];
+  firstPages.forEach((result, index) => {
+    const vendorName = selectedVendors[index];
+    for (let page = 2; page <= result.pages; page += 1) {
+      remainingPages.push({ vendorName, page });
+    }
+  });
+
+  let nextPageIndex = 0;
+  const workerCount = Math.min(6, Math.max(1, remainingPages.length));
   await Promise.all(
     Array.from({ length: workerCount }, async () => {
-      while (nextPage <= lastPage) {
-        const page = nextPage;
-        nextPage += 1;
-        await loadVendorPage(page);
+      while (nextPageIndex < remainingPages.length) {
+        const task = remainingPages[nextPageIndex];
+        nextPageIndex += 1;
+        matchedPages.push(await fetchVendorPage(task.vendorName, task.page));
       }
     })
   );
@@ -610,7 +630,7 @@ async function loadAllCollectionPagesForExtraCategoryFilters() {
   let nextPage = 2;
 
   async function loadCategoryPage(page) {
-    const url = buildBookstoreSectionPageUrl(page, sectionId);
+    const url = buildBookstoreSectionPageUrl(page, sectionId, { omitClientSideFilters: true });
 
     try {
       const response = await fetch(url.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
@@ -619,7 +639,7 @@ async function loadAllCollectionPagesForExtraCategoryFilters() {
       const html = await response.text();
       const doc = new DOMParser().parseFromString(html, 'text/html');
       const nextItems = Array.from(doc.querySelectorAll('.product-grid__item[data-product-id]'));
-      const matchingItems = nextItems.filter((item) => productItemMatchesSelectedVendors(item) && productItemMatchesExtraCategories(item));
+      const matchingItems = nextItems.filter((item) => productItemMatchesSelectedVendors(item) && productItemMatchesActiveCategories(item));
 
       matchedPages.push({ page, items: matchingItems });
     } catch (error) {
@@ -746,7 +766,7 @@ async function loadAllCollectionPagesForSearch(query) {
         if (!productId || existingIds.has(productId)) return;
         existingIds.add(productId);
 
-        if (productItemMatchesSearch(item, query) && productItemMatchesSelectedVendors(item) && productItemMatchesExtraCategories(item)) {
+        if (productItemMatchesSearch(item, query) && productItemMatchesSelectedVendors(item) && productItemMatchesActiveCategories(item)) {
           item.hidden = false;
           item.style.display = '';
           grid.appendChild(item);
@@ -813,8 +833,14 @@ function getCollectionSearchGrid() {
   return document.querySelector('main[data-template^="collection"] .product-grid');
 }
 
-function buildBookstoreSectionPageUrl(page, sectionId) {
+function buildBookstoreSectionPageUrl(page, sectionId, options = {}) {
   const url = new URL(window.location.href);
+
+  if (options.omitClientSideFilters) {
+    url.searchParams.delete('filter.p.vendor');
+    url.searchParams.delete('bookstore_category');
+  }
+
   url.searchParams.delete('page');
   url.searchParams.delete('section_id');
   url.searchParams.set('page', String(page));
@@ -1286,7 +1312,7 @@ async function loadGlobalCollectionSearch(query) {
     const html = await response.text();
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const searchItems = Array.from(doc.querySelectorAll('main[data-template^="search"] .product-grid__item[data-product-id], .product-grid__item[data-product-id]'))
-      .filter((item) => productItemMatchesSearch(item, query) && productItemMatchesSelectedVendors(item) && productItemMatchesExtraCategories(item));
+      .filter((item) => productItemMatchesSearch(item, query) && productItemMatchesSelectedVendors(item) && productItemMatchesActiveCategories(item));
     const resultCount = searchItems.length;
 
     grid.innerHTML = '';
@@ -1353,7 +1379,7 @@ async function applyCollectionPageSearch(query, updateUrl = true, loadAllPages =
   }
 
   items.forEach((item) => {
-    const isMatch = productItemMatchesSearch(item, query) && productItemMatchesSelectedVendors(item) && productItemMatchesExtraCategories(item);
+    const isMatch = productItemMatchesSearch(item, query) && productItemMatchesSelectedVendors(item) && productItemMatchesActiveCategories(item);
 
     item.hidden = !isMatch;
     item.style.display = isMatch ? '' : 'none';
