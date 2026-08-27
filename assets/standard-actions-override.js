@@ -710,11 +710,22 @@ async function loadAllCollectionPagesForVendorFilter() {
   grid.dataset.vendorFilterLoaded = loadedKey;
 }
 
+function shouldUseNativeVendorPageOnly(selectedVendors, url = new URL(window.location.href)) {
+  return (
+    url.pathname === '/collections/vendors' &&
+    selectedVendors.length === 1 &&
+    getBookstoreExtraCategoryFilters(url).length === 0 &&
+    !hasBookstoreActivePriceFilter(url) &&
+    !url.searchParams.get('collection_search')
+  );
+}
+
 async function applyCollectionVendorFilterFromURL(loadAllPages = false) {
   const vendor = getCollectionVendorFilter();
   const selectedVendors = getCollectionVendorFilters();
+  const shouldLoadAllPages = selectedVendors.length && loadAllPages && !shouldUseNativeVendorPageOnly(selectedVendors);
 
-  if (selectedVendors.length && loadAllPages) {
+  if (shouldLoadAllPages) {
     setBookstoreFilterLoadingState(true);
   }
 
@@ -729,12 +740,14 @@ async function applyCollectionVendorFilterFromURL(loadAllPages = false) {
 
   let visibleCount = filterExistingCollectionItemsByVendor(vendor);
 
-  if (selectedVendors.length && loadAllPages) {
-    await loadAllCollectionPagesForVendorFilter();
-    visibleCount = filterExistingCollectionItemsByVendor(vendor);
+  try {
+    if (shouldLoadAllPages) {
+      await loadAllCollectionPagesForVendorFilter();
+      visibleCount = filterExistingCollectionItemsByVendor(vendor);
+    }
+  } finally {
+    setBookstoreFilterLoadingState(false);
   }
-
-  setBookstoreFilterLoadingState(false);
 
   return visibleCount;
 }
