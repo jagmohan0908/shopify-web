@@ -504,45 +504,6 @@ main[data-template^="product"] .product-information .product-media {
   text-decoration: none;
 }
 
-html.bookstore-filtering-pending main[data-template^="collection"] .product-grid,
-html.bookstore-filtering-pending main[data-template^="search"] .product-grid {
-  opacity: 0.16;
-  pointer-events: none;
-}
-
-html.bookstore-filtering-pending main[data-template^="collection"] .product-grid-container,
-html.bookstore-filtering-pending main[data-template^="search"] .product-grid-container {
-  position: relative;
-  min-height: 520px;
-}
-
-html.bookstore-filtering-pending main[data-template^="collection"] .product-grid-container::after,
-html.bookstore-filtering-pending main[data-template^="search"] .product-grid-container::after {
-  content: "";
-  position: absolute;
-  inset: 24px 0 auto 0;
-  height: 440px;
-  border-radius: 16px;
-  pointer-events: none;
-  background:
-    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent) 0 0 / 220px 100% no-repeat,
-    repeating-linear-gradient(90deg, #ffffff 0 180px, transparent 180px 210px) 0 0 / 100% 70% no-repeat,
-    repeating-linear-gradient(90deg, #eef2f8 0 180px, transparent 180px 210px) 0 74% / 100% 18px no-repeat,
-    repeating-linear-gradient(90deg, #f5f7fb 0 140px, transparent 140px 210px) 0 82% / 100% 14px no-repeat;
-  box-shadow: inset 0 0 0 1px rgba(13, 28, 47, 0.06);
-  animation: bookstore-loading-shimmer 1.15s linear infinite;
-}
-
-@keyframes bookstore-loading-shimmer {
-  to {
-    background-position:
-      100% 0,
-      0 0,
-      0 74%,
-      0 82%;
-  }
-}
-
 /* Bestseller list correction */
 .section-bestseller-lists .sb-section {
   padding-top: clamp(34px, 4vw, 56px) !important;
