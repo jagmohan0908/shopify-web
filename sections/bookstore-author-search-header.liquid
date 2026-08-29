@@ -37,13 +37,30 @@
       </nav>
       <div class="bookstore-eyebrow">{{ section.settings.eyebrow }}</div>
       <h1 class="bookstore-heading">{{ requested_author }}</h1>
-      <div class="bookstore-selected-filter-summary" data-bookstore-selected-filter-summary hidden></div>
       <p class="bookstore-copy bookstore-category-description">
         Browse available titles by {{ requested_author }}. Use the filters below to narrow the catalogue.
       </p>
-      <div class="bookstore-category-meta">
-        <span>{{ search.results_count }} titles</span>
-      </div>
+      {% if section.settings.show_search %}
+        <form
+          class="bookstore-search bookstore-category-search"
+          action="{{ routes.search_url }}"
+          method="get"
+          role="search"
+        >
+          <input type="hidden" name="view" value="author">
+          <input type="hidden" name="type" value="product">
+          <input type="hidden" name="filter.p.m.custom.author" value="{{ requested_author | escape }}">
+          <input type="hidden" name="author" value="{{ requested_author | escape }}">
+          <input
+            name="q"
+            type="search"
+            value="{% unless search.terms == '*' %}{{ search.terms | escape }}{% endunless %}"
+            placeholder="{{ section.settings.search_placeholder }}"
+            aria-label="Search books by {{ requested_author | escape }}"
+          >
+          <button class="bookstore-search__button" type="submit">{{ section.settings.search_button }}</button>
+        </form>
+      {% endif %}
     </div>
   </section>
 </div>
@@ -54,6 +71,9 @@
   "enabled_on": { "templates": ["search"] },
   "settings": [
     { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Author collection" },
+    { "type": "checkbox", "id": "show_search", "label": "Show search bar", "default": true },
+    { "type": "text", "id": "search_placeholder", "label": "Search placeholder", "default": "Search title, author, publisher or ISBN" },
+    { "type": "text", "id": "search_button", "label": "Search button label", "default": "Search" },
     { "type": "color", "id": "background_color", "label": "Background", "default": "#eff4ff" },
     { "type": "color", "id": "card_background", "label": "Search background", "default": "#ffffff" },
     { "type": "color", "id": "heading_color", "label": "Heading color", "default": "#0d1c2f" },
