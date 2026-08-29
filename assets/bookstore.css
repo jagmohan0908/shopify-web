@@ -6149,24 +6149,42 @@ search-page-input-component .search__icon svg,
 .bookstore-active-query-pill {
   display: inline-flex;
   align-items: center;
+  justify-content: space-between;
+  max-width: 100%;
+  min-height: 34px;
+  padding: 8px 12px;
   gap: 8px;
   border: 1px solid rgba(182, 25, 26, 0.24);
-  background: #fff5f5;
-  color: #8f1112;
+  border-radius: 999px;
+  background: #fff;
+  color: #111827;
   cursor: pointer;
   font: inherit;
+  font-size: 0.86rem;
   font-weight: 700;
+  line-height: 1.25;
+  white-space: normal;
+  text-align: left;
 }
 
 .facets-remove:has([data-bookstore-query-pill]) {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
   margin-block-start: var(--margin-2xs);
   margin-block-end: var(--margin-md);
 }
 
+.bookstore-active-query-pill span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .bookstore-active-query-pill span[aria-hidden="true"] {
+  flex: 0 0 auto;
   font-size: 1.05em;
   line-height: 1;
+  color: #8f1112;
 }
 
 .bookstore-directory__grid {
