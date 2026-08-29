@@ -56,8 +56,6 @@
   endif
 %}
 
-{% render 'fly-to-cart-styles' %}
-
 {% comment %}
   Only the button(s) a card can actually use are rendered in the DOM (gated by render_add / render_choose).
   When both are rendered, only one is shown at a time based on the data-quick-add-button attribute.
@@ -144,13 +142,3 @@
     </button>
   {% endif %}
 </quick-add-component>
-
-{% render 'add-to-cart-button-styles' %}
-{% render 'checkbox-styles' %}
-{% if render_choose %}
-  {% render 'variant-picker-styles' %}
-{% endif %}
-{% render 'quick-add-styles' %}
-{% render 'video-background-styles' %}
-{% render 'video-placeholder-styles' %}
-{% render 'deferred-media-product-model-styles' %}
