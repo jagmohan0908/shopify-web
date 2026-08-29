@@ -281,6 +281,29 @@
   .quick-add-modal__content .product-details :is(.view-product-title, .buy-buttons-block) {
     flex: 0 0 auto;
   }
+
+  .quick-add-modal__content .product-details .buy-buttons-block {
+    margin-top: var(--gap-md) !important;
+    position: static !important;
+    bottom: auto !important;
+    padding-bottom: 0 !important;
+  }
+
+  .quick-add-modal__content .product-details .buy-buttons-block::before {
+    display: none !important;
+  }
+
+  .quick-add-modal__content .product-details .buy-buttons-block__bar {
+    margin-top: var(--gap-md) !important;
+    position: static !important;
+    bottom: auto !important;
+    padding-block: 0 !important;
+  }
+
+  .quick-add-modal__content .product-details .buy-buttons-block__bar::before {
+    display: none !important;
+  }
+
   .quick-add-modal__content .product-details :is(.buy-buttons-block) {
     margin-top: auto;
     position: sticky;
