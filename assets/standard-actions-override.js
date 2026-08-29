@@ -35,6 +35,29 @@ if (window.Shopify?.actions) {
   document.addEventListener('DOMContentLoaded', init, { once: true });
 }
 
+const BOOKSTORE_BACKGROUND_FILTER_WORKERS = 1;
+const BOOKSTORE_BACKGROUND_FILTER_DELAY = 120;
+const BOOKSTORE_COLLECTION_SEARCH_DEBOUNCE = 320;
+
+function runBookstoreBackgroundTask(task, delay = BOOKSTORE_BACKGROUND_FILTER_DELAY) {
+  return new Promise((resolve) => {
+    const run = () => {
+      Promise.resolve()
+        .then(task)
+        .then(resolve)
+        .catch(resolve);
+    };
+
+    window.setTimeout(() => {
+      if (window.requestIdleCallback) {
+        window.requestIdleCallback(run, { timeout: 1500 });
+      } else {
+        run();
+      }
+    }, delay);
+  });
+}
+
 /**
  * Old publisher links from search pages can still contain `filter.p.vendor`.
  * Collection/category pages must keep `filter.p.vendor` as an in-page filter,
@@ -786,7 +809,7 @@ async function loadAllCollectionPagesForVendorFilter() {
 
   window.setTimeout(async () => {
     let nextPageIndex = 0;
-    const workerCount = Math.min(6, Math.max(1, remainingPages.length));
+    const workerCount = Math.min(BOOKSTORE_BACKGROUND_FILTER_WORKERS, Math.max(1, remainingPages.length));
 
     try {
       await Promise.all(
@@ -794,8 +817,10 @@ async function loadAllCollectionPagesForVendorFilter() {
           while (nextPageIndex < remainingPages.length && isCurrentRun()) {
             const task = remainingPages[nextPageIndex];
             nextPageIndex += 1;
-            const result = await fetchVendorPage(task.vendorName, task.page);
-            await appendPageItems(result.items);
+            await runBookstoreBackgroundTask(async () => {
+              const result = await fetchVendorPage(task.vendorName, task.page);
+              await appendPageItems(result.items);
+            });
           }
         })
       );
@@ -1007,7 +1032,7 @@ async function loadAllCollectionPagesForExtraCategoryFilters() {
 
   window.setTimeout(async () => {
     let nextPageIndex = 0;
-    const workerCount = Math.min(6, Math.max(1, remainingPages.length));
+    const workerCount = Math.min(BOOKSTORE_BACKGROUND_FILTER_WORKERS, Math.max(1, remainingPages.length));
 
     try {
       await Promise.all(
@@ -1015,8 +1040,10 @@ async function loadAllCollectionPagesForExtraCategoryFilters() {
           while (nextPageIndex < remainingPages.length && isCurrentRun()) {
             const task = remainingPages[nextPageIndex];
             nextPageIndex += 1;
-            const result = await loadCategoryPage(task.handle, task.page);
-            await appendCategoryItems(result.items);
+            await runBookstoreBackgroundTask(async () => {
+              const result = await loadCategoryPage(task.handle, task.page);
+              await appendCategoryItems(result.items);
+            });
           }
         })
       );
@@ -1123,40 +1150,53 @@ async function loadAllCollectionPagesForSearch(query) {
   const lastPage = Number(grid.dataset.lastPage || 1);
   const loadedKey = `search:${normalizedQuery}`;
 
-  if (!sectionId || !lastPage || lastPage <= 1 || grid.dataset.collectionSearchLoaded === loadedKey) return;
+  if (!sectionId || !lastPage || lastPage <= 1 || grid.dataset.collectionSearchLoaded === loadedKey || grid.dataset.collectionSearchLoading === loadedKey) return;
+
+  grid.dataset.collectionSearchLoading = loadedKey;
+  const runId = (window.__bookstoreCollectionSearchRunId || 0) + 1;
+  window.__bookstoreCollectionSearchRunId = runId;
+  const isCurrentRun = () => window.__bookstoreCollectionSearchRunId === runId && grid.dataset.collectionSearchLoading === loadedKey;
 
   const existingIds = new Set(
     Array.from(grid.querySelectorAll('.product-grid__item[data-product-id]')).map((item) => item.getAttribute('data-product-id'))
   );
 
-  for (let page = 2; page <= lastPage; page += 1) {
-    const url = buildBookstoreSectionPageUrl(page, sectionId);
+  try {
+    for (let page = 2; page <= lastPage && isCurrentRun(); page += 1) {
+      await runBookstoreBackgroundTask(async () => {
+        if (!isCurrentRun()) return;
 
-    try {
-      const response = await fetch(url.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-      if (!response.ok) continue;
+        const url = buildBookstoreSectionPageUrl(page, sectionId);
+        const response = await fetch(url.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        if (!response.ok || !isCurrentRun()) return;
 
-      const html = await response.text();
-      const doc = new DOMParser().parseFromString(html, 'text/html');
-      const nextItems = Array.from(doc.querySelectorAll('.product-grid__item[data-product-id]'));
+        const html = await response.text();
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const nextItems = Array.from(doc.querySelectorAll('.product-grid__item[data-product-id]'));
 
-      nextItems.forEach((item) => {
-        const productId = item.getAttribute('data-product-id');
-        if (!productId || existingIds.has(productId)) return;
-        existingIds.add(productId);
+        nextItems.forEach((item) => {
+          const productId = item.getAttribute('data-product-id');
+          if (!productId || existingIds.has(productId)) return;
+          existingIds.add(productId);
 
-        if (productItemMatchesSearch(item, query) && productItemMatchesSelectedVendors(item) && productItemMatchesActiveCategories(item) && productItemMatchesActivePrice(item)) {
-          item.hidden = false;
-          item.style.display = '';
-          grid.appendChild(item);
-        }
+          if (productItemMatchesSearch(item, query) && productItemMatchesSelectedVendors(item) && productItemMatchesActiveCategories(item) && productItemMatchesActivePrice(item)) {
+            item.hidden = false;
+            item.style.display = '';
+            grid.appendChild(item);
+          }
+        });
       });
-    } catch (error) {
-      // Keep already loaded matches if one extra page request fails.
+    }
+  } catch (error) {
+    // Keep already loaded matches if one extra page request fails.
+  } finally {
+    if (isCurrentRun()) {
+      grid.dataset.collectionSearchLoaded = loadedKey;
+    }
+    if (grid.dataset.collectionSearchLoading === loadedKey) {
+      delete grid.dataset.collectionSearchLoading;
     }
   }
-
-  grid.dataset.collectionSearchLoaded = loadedKey;
 }
 
 if (document.readyState === 'loading') {
@@ -1837,8 +1877,8 @@ function initCollectionPageSearch() {
     input.addEventListener('input', () => {
       window.clearTimeout(input._bookstoreCollectionSearchTimer);
       input._bookstoreCollectionSearchTimer = window.setTimeout(() => {
-        applyCollectionPageSearch(input.value || '', true, true);
-      }, 180);
+        applyCollectionPageSearch(input.value || '', true, false);
+      }, BOOKSTORE_COLLECTION_SEARCH_DEBOUNCE);
     });
 
     const initialQuery = new URL(window.location.href).searchParams.get('collection_search') || input.value || '';
