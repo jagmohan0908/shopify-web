@@ -1546,6 +1546,28 @@ main[data-template^="product"] .product-recommendations .resource-list__item img
   }
 }
 
+@media screen and (min-width: 990px) {
+  .page-wrapper--drawer-open :is(main[data-template^="collection"], main[data-template^="search"]) .collection-wrapper {
+    display: grid;
+    width: min(100% - 48px, 840px);
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .page-wrapper--drawer-open :is(main[data-template^="collection"], main[data-template^="search"]) .facets-block-wrapper--vertical {
+    display: none !important;
+  }
+
+  .page-wrapper--drawer-open :is(main[data-template^="collection"], main[data-template^="search"]) .main-collection-grid {
+    grid-column: 1 / -1 !important;
+    min-width: 0;
+  }
+
+  .page-wrapper--drawer-open :is(main[data-template^="collection"], main[data-template^="search"]) .product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
+    gap: 24px !important;
+  }
+}
+
 @media screen and (max-width: 749px) {
   :is(main[data-template^="collection"], main[data-template^="search"]) .bookstore-category-hero {
     padding: 34px 0 40px;
