@@ -1344,7 +1344,7 @@ main[data-template^="product"] .product-recommendations .resource-list__item img
   align-items: start;
 }
 
-:is(main[data-template^="collection"], main[data-template^="search"]) .facets-block-wrapper--vertical {
+:is(main[data-template^="collection"], main[data-template^="search"]) .facets-block-wrapper--vertical:not(#filters-drawer) {
   width: 264px;
   max-width: 264px;
 }
@@ -1541,8 +1541,14 @@ main[data-template^="product"] .product-recommendations .resource-list__item img
     width: min(100% - 32px, 720px);
   }
 
-  :is(main[data-template^="collection"], main[data-template^="search"]) .facets-block-wrapper--vertical {
+  :is(main[data-template^="collection"], main[data-template^="search"]) .facets-block-wrapper--vertical:not(#filters-drawer) {
     display: none;
+  }
+
+  :is(main[data-template^="collection"], main[data-template^="search"]) #filters-drawer.facets-block-wrapper--vertical {
+    display: block;
+    width: auto;
+    max-width: none;
   }
 }
 
