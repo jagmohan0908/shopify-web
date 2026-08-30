@@ -37,6 +37,8 @@ export default class PaginatedList extends Component {
   connectedCallback() {
     super.connectedCallback();
 
+    if (this.getAttribute('infinite-scroll') === 'false') return;
+
     /** @type {HTMLElement | null} */
     const templateCard = this.querySelector('[ref="cardGallery"]');
     if (templateCard) {
