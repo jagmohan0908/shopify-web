@@ -39,6 +39,53 @@ const BOOKSTORE_BACKGROUND_FILTER_WORKERS = 1;
 const BOOKSTORE_BACKGROUND_FILTER_DELAY = 120;
 const BOOKSTORE_COLLECTION_SEARCH_DEBOUNCE = 320;
 const BOOKSTORE_ENABLE_INITIAL_BACKGROUND_FILTER_LOADS = false;
+const BOOKSTORE_COLLECTION_HANDLE_ALIASES = {
+  'business-and-management': 'business-economics',
+};
+
+function normalizeBookstoreCollectionAliasUrl(rawUrl) {
+  try {
+    const url = new URL(rawUrl, window.location.origin);
+    const match = url.pathname.match(/^\/collections\/([^/?#]+)\/?$/);
+    const handle = match ? decodeURIComponent(match[1]) : '';
+    const aliasHandle = BOOKSTORE_COLLECTION_HANDLE_ALIASES[handle];
+    let changed = false;
+
+    if (aliasHandle) {
+      url.pathname = `/collections/${aliasHandle}`;
+      changed = true;
+    }
+
+    const categoryValues = url.searchParams.getAll('bookstore_category');
+    if (categoryValues.length > 0) {
+      url.searchParams.delete('bookstore_category');
+      categoryValues.forEach((value) => {
+        url.searchParams.append('bookstore_category', BOOKSTORE_COLLECTION_HANDLE_ALIASES[value] || value);
+        if (BOOKSTORE_COLLECTION_HANDLE_ALIASES[value]) changed = true;
+      });
+    }
+
+    return changed ? `${url.pathname}${url.search}${url.hash}` : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function initBookstoreCollectionAliasRedirect() {
+  const normalizedUrl = normalizeBookstoreCollectionAliasUrl(window.location.href);
+  if (normalizedUrl) window.location.replace(normalizedUrl);
+}
+
+function rewriteBookstoreCollectionAliasLinks(root = document) {
+  const scope = root instanceof Element ? root : document;
+  scope.querySelectorAll?.('a[href*="/collections/business-and-management"], a[href*="bookstore_category=business-and-management"]').forEach((link) => {
+    if (!(link instanceof HTMLAnchorElement)) return;
+    const normalizedUrl = normalizeBookstoreCollectionAliasUrl(link.href);
+    if (normalizedUrl) link.href = normalizedUrl;
+  });
+}
+
+initBookstoreCollectionAliasRedirect();
 
 function runBookstoreBackgroundTask(task, delay = BOOKSTORE_BACKGROUND_FILTER_DELAY) {
   return new Promise((resolve) => {
@@ -82,6 +129,8 @@ function normalizePublisherVendorUrl(rawUrl) {
 }
 
 function rewritePublisherVendorLinks() {
+  rewriteBookstoreCollectionAliasLinks(document);
+
   document.querySelectorAll('a[href*="filter.p.vendor"]').forEach((link) => {
     const normalizedUrl = normalizePublisherVendorUrl(link.href);
 
