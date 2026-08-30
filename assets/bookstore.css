@@ -6031,9 +6031,27 @@ bookstore-carousel {
 }
 
 .bookstore-directory__search > span:last-child {
+  position: relative;
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  align-items: center;
+  justify-content: center;
   color: #a51d2d;
-  font-size: 1.4rem;
+  font-size: 0;
   font-weight: 900;
+}
+
+.bookstore-directory__search > span:last-child::before {
+  content: "";
+  display: block;
+  width: 19px;
+  height: 19px;
+  background: currentColor;
+  transform: none !important;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'%3E%3C/circle%3E%3Cpath d='M20 20l-4.2-4.2'%3E%3C/path%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'%3E%3C/circle%3E%3Cpath d='M20 20l-4.2-4.2'%3E%3C/path%3E%3C/svg%3E") center / contain no-repeat;
 }
 
 .bookstore-directory__letters {
@@ -6156,6 +6174,26 @@ bookstore-carousel {
   background: currentColor;
   transform: rotate(45deg);
   transform-origin: left center;
+}
+
+.bookstore-entity-author-search button::before {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  top: 50%;
+  left: 50%;
+  border: 0;
+  border-radius: 0;
+  background: currentColor;
+  transform: translate(-50%, -50%) !important;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'%3E%3C/circle%3E%3Cpath d='M20 20l-4.2-4.2'%3E%3C/path%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'%3E%3C/circle%3E%3Cpath d='M20 20l-4.2-4.2'%3E%3C/path%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.bookstore-entity-author-search button::after {
+  content: none !important;
+  display: none !important;
 }
 
 .search-action .svg-wrapper svg,
