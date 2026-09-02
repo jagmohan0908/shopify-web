@@ -81,7 +81,11 @@
         <div class="bookstore-filter-note bookstore-category-publishers" aria-label="Browse publishers">
           {% for vendor in collection.all_vendors limit: section.settings.publisher_limit %}
             {% assign encoded_vendor = vendor | url_encode %}
-            {% assign vendor_filter_url = collection.url | append: '?collection_search=' | append: encoded_vendor %}
+            {% if collection.handle == 'vendors' %}
+              {% assign vendor_filter_url = routes.collections_url | append: '/all?filter.p.vendor=' | append: encoded_vendor %}
+            {% else %}
+              {% assign vendor_filter_url = collection.url | append: '?filter.p.vendor=' | append: encoded_vendor %}
+            {% endif %}
             <a
               href="{{ vendor_filter_url }}"
               {% if current_vendor_filter == vendor %}aria-current="page"{% endif %}

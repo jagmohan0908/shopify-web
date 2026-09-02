@@ -66,6 +66,14 @@ function useAllProductsForVendorFacetURL(url, urlParameters) {
   urlParameters.delete('options[prefix]');
 }
 
+function getBookstoreFormControlNames(form) {
+  return new Set(
+    Array.from(form?.elements || [])
+      .map((element) => element instanceof HTMLInputElement || element instanceof HTMLSelectElement || element instanceof HTMLTextAreaElement ? element.name : '')
+      .filter(Boolean)
+  );
+}
+
 /**
  * Handles the main facets form functionality
  *
@@ -110,6 +118,7 @@ class FacetsFormComponent extends Component {
   createURLParameters(formData = new FormData(this.refs.facetsForm)) {
     let newParameters = new URLSearchParams(/** @type any */ (formData));
     const currentParameters = new URLSearchParams(window.location.search);
+    const representedControlNames = getBookstoreFormControlNames(this.refs.facetsForm);
 
     ['filter.v.price.gte', 'filter.v.price.lte'].forEach((paramName) => {
       const priceValue = newParameters.get(paramName);
@@ -133,7 +142,11 @@ class FacetsFormComponent extends Component {
 
     for (const [name, value] of currentParameters.entries()) {
       if (name === 'page' || name === 'section_id') continue;
-      if (name.startsWith('filter.')) continue;
+      if (name.startsWith('filter.') && representedControlNames.has(name)) continue;
+      if (name.startsWith('filter.') && !representedControlNames.has(name)) {
+        addUniqueBookstoreFilterValue(newParameters, name, value);
+        continue;
+      }
       if (!shouldPreserveBookstoreQueryParam(name)) continue;
       if (newParameters.has(name)) continue;
 

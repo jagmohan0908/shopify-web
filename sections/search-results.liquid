@@ -58,6 +58,13 @@
           {% assign product_author_downcase = product.metafields.custom.author.value | default: product.metafields.custom.author | downcase | strip %}
           {% assign product_publisher_downcase = product.metafields.custom.publisher_name.value | default: product.vendor | downcase | strip %}
           {% assign product_isbn_downcase = product.metafields.custom.isbn.value | default: product.selected_or_first_available_variant.barcode | downcase | strip %}
+          {% assign product_format = product.metafields.custom.format.value | default: product.metafields.custom.format | default: product.metafields.custom.cover_type.value | default: product.metafields.custom.cover_type %}
+          {% assign product_language = product.metafields.custom.language.value | default: product.metafields.custom.language %}
+          {% capture product_collection_handles %}
+            {% for product_collection in product.collections %}
+              {{ product_collection.handle }}|
+            {% endfor %}
+          {% endcapture %}
           {% assign product_id_token = product.id | append: ',' | prepend: ',' %}
           {% assign is_exact_keyword_match = false %}
           {% if search_query_downcase != blank %}
@@ -78,6 +85,12 @@
               data-product-id="{{ product.id }}"
               data-bookstore-product-price-min="{{ product.price_min }}"
               data-bookstore-product-price-max="{{ product.price_max }}"
+              data-bookstore-product-vendor="{{ product.vendor | escape }}"
+              data-bookstore-product-author="{{ product.metafields.custom.author.value | default: product.metafields.custom.author | escape }}"
+              data-bookstore-product-format="{{ product_format | escape }}"
+              data-bookstore-product-language="{{ product_language | escape }}"
+              data-bookstore-product-available="{% if product.available %}1{% else %}0{% endif %}"
+              data-bookstore-product-collections="{{ product_collection_handles | strip | escape }}"
               ref="cards[]"
             >
               {% content_for 'block',
@@ -95,6 +108,13 @@
           {% assign product_author_downcase = product.metafields.custom.author.value | default: product.metafields.custom.author | downcase | strip %}
           {% assign product_publisher_downcase = product.metafields.custom.publisher_name.value | default: product.vendor | downcase | strip %}
           {% assign product_isbn_downcase = product.metafields.custom.isbn.value | default: product.selected_or_first_available_variant.barcode | downcase | strip %}
+          {% assign product_format = product.metafields.custom.format.value | default: product.metafields.custom.format | default: product.metafields.custom.cover_type.value | default: product.metafields.custom.cover_type %}
+          {% assign product_language = product.metafields.custom.language.value | default: product.metafields.custom.language %}
+          {% capture product_collection_handles %}
+            {% for product_collection in product.collections %}
+              {{ product_collection.handle }}|
+            {% endfor %}
+          {% endcapture %}
           {% assign product_id_token = product.id | append: ',' | prepend: ',' %}
           {% assign is_secondary_keyword_match = false %}
           {% if search_query_downcase != blank %}
@@ -116,6 +136,12 @@
                 data-product-id="{{ product.id }}"
                 data-bookstore-product-price-min="{{ product.price_min }}"
                 data-bookstore-product-price-max="{{ product.price_max }}"
+                data-bookstore-product-vendor="{{ product.vendor | escape }}"
+                data-bookstore-product-author="{{ product.metafields.custom.author.value | default: product.metafields.custom.author | escape }}"
+                data-bookstore-product-format="{{ product_format | escape }}"
+                data-bookstore-product-language="{{ product_language | escape }}"
+                data-bookstore-product-available="{% if product.available %}1{% else %}0{% endif %}"
+                data-bookstore-product-collections="{{ product_collection_handles | strip | escape }}"
                 ref="cards[]"
               >
                 {% content_for 'block',
@@ -132,6 +158,13 @@
         {% for product in products %}
           {% assign product_id_token = product.id | append: ',' | prepend: ',' %}
           {% unless rendered_product_ids contains product_id_token %}
+          {% assign product_format = product.metafields.custom.format.value | default: product.metafields.custom.format | default: product.metafields.custom.cover_type.value | default: product.metafields.custom.cover_type %}
+          {% assign product_language = product.metafields.custom.language.value | default: product.metafields.custom.language %}
+          {% capture product_collection_handles %}
+            {% for product_collection in product.collections %}
+              {{ product_collection.handle }}|
+            {% endfor %}
+          {% endcapture %}
           <li
             id="{{ section.id }}-{{ product.id }}"
             class="product-grid__item product-grid__item--{{ forloop.index0 }}"
@@ -139,6 +172,12 @@
             data-product-id="{{ product.id }}"
             data-bookstore-product-price-min="{{ product.price_min }}"
             data-bookstore-product-price-max="{{ product.price_max }}"
+            data-bookstore-product-vendor="{{ product.vendor | escape }}"
+            data-bookstore-product-author="{{ product.metafields.custom.author.value | default: product.metafields.custom.author | escape }}"
+            data-bookstore-product-format="{{ product_format | escape }}"
+            data-bookstore-product-language="{{ product_language | escape }}"
+            data-bookstore-product-available="{% if product.available %}1{% else %}0{% endif %}"
+            data-bookstore-product-collections="{{ product_collection_handles | strip | escape }}"
             ref="cards[]"
           >
             {% content_for 'block',

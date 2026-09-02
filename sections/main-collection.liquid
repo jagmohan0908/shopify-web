@@ -60,35 +60,6 @@
         {% assign products_per_page = section.settings.products_per_page %}
       {% endif %}
 
-      {% liquid
-        assign current_vendor_filter = request.params['filter.p.vendor'] | strip
-        assign current_author_filter = request.params['filter.p.m.custom.author'] | default: request.params['author'] | strip
-        if current_vendor_filter == blank and collection.handle == 'vendors'
-          assign current_vendor_filter = collection.current_vendor | default: request.params['q'] | strip
-        endif
-        if collection.filters != blank
-          for filter in collection.filters
-            assign filter_label_downcase = filter.label | downcase
-            if current_vendor_filter == blank
-              if filter.param_name contains 'vendor' or filter_label_downcase contains 'publisher'
-                if filter.active_values.size > 0
-                  assign current_vendor_filter = filter.active_values.first.value | default: filter.active_values.first.label | strip
-                endif
-              endif
-            endif
-            if current_author_filter == blank
-              if filter.param_name contains 'author' or filter_label_downcase contains 'author'
-                if filter.active_values.size > 0
-                  assign current_author_filter = filter.active_values.first.value | default: filter.active_values.first.label | strip
-                endif
-              endif
-            endif
-          endfor
-        endif
-        assign current_vendor_filter_key = current_vendor_filter | handleize
-        assign current_author_filter_key = current_author_filter | handleize
-      %}
-
       {% paginate collection.products by products_per_page %}
         {% capture children %}
           {% for product in collection.products %}
@@ -96,6 +67,7 @@
               assign searchable_author = product.metafields.custom.author.value | default: product.metafields.custom.author | default: product.metafields.custom.author_name_and_about.value | default: product.metafields.book.author.value
               assign searchable_isbn = product.metafields.custom.isbn.value | default: product.metafields.custom.isbn | default: product.selected_or_first_available_variant.sku | default: product.selected_or_first_available_variant.barcode
               assign searchable_format = product.metafields.custom.format.value | default: product.metafields.custom.format | default: product.metafields.custom.cover_type.value | default: product.metafields.custom.cover_type
+              assign searchable_language = product.metafields.custom.language.value | default: product.metafields.custom.language
               capture searchable_tags
                 for tag in product.tags
                   echo tag
@@ -127,21 +99,13 @@
                 echo ' '
                 echo searchable_format
                 echo ' '
+                echo searchable_language
+                echo ' '
                 echo searchable_tags
                 echo ' '
                 echo searchable_variant_codes
               endcapture
-              assign product_vendor_key = product.vendor | handleize
-              assign product_author_key = searchable_author | handleize
-              assign should_render_product = true
-              if current_vendor_filter_key != blank and product_vendor_key != current_vendor_filter_key
-                assign should_render_product = false
-              endif
-              if current_author_filter_key != blank and product_author_key != current_author_filter_key
-                assign should_render_product = false
-              endif
             %}
-            {% if should_render_product %}
             <li
               id="{{ section.id }}-{{ product.id }}"
               class="product-grid__item product-grid__item--{{ forloop.index0 }}"
@@ -152,6 +116,8 @@
               data-bookstore-product-vendor="{{ product.vendor | escape }}"
               data-bookstore-product-author="{{ searchable_author | escape }}"
               data-bookstore-product-format="{{ searchable_format | escape }}"
+              data-bookstore-product-language="{{ searchable_language | escape }}"
+              data-bookstore-product-available="{% if product.available %}1{% else %}0{% endif %}"
               data-bookstore-product-collections="{{ searchable_collection_handles | strip | escape }}"
               data-collection-search-text="{{ collection_search_text | strip | escape }}"
               ref="cards[]"
@@ -163,7 +129,6 @@
                 product_view_context: 'collection'
               %}
             </li>
-            {% endif %}
           {% endfor %}
         {% endcapture %}
 

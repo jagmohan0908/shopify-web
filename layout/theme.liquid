@@ -55,7 +55,11 @@
         if (rawPath === '/collections/all') {
           const params = new URLSearchParams(window.location.search);
           const selectedVendors = params.getAll('filter.p.vendor').filter((vendor) => vendor && vendor.trim());
-          if (selectedVendors.length === 1) {
+          const hasExtraFilters = Array.from(params.entries()).some(([name, value]) => {
+            if (!value || name === 'filter.p.vendor' || name === 'page' || name === 'section_id') return false;
+            return name.startsWith('filter.') || name === 'bookstore_category' || name === 'collection_search' || name === 'author';
+          });
+          if (selectedVendors.length === 1 && !hasExtraFilters) {
             const vendor = params.get('filter.p.vendor');
             window.location.replace(`/collections/vendors?q=${encodeURIComponent(vendor)}${window.location.hash || ''}`);
           }

@@ -115,8 +115,8 @@
               assign author_name = author_value.label | default: author_value.value | strip
               assign author_key = author_name | handleize
               assign author_value_raw = author_value.value | default: author_name
-              assign is_current_author = false
-              if author_key == current_author_key
+              assign is_current_author = author_value.active
+              if is_current_author == false and author_key == current_author_key
                 assign is_current_author = true
               endif
             %}
@@ -184,8 +184,8 @@
                 assign publisher_name = publisher_value.label | default: publisher_value.value | strip
                 assign publisher_value_raw = publisher_value.value | default: publisher_name
                 assign publisher_key = publisher_name | handleize
-                assign is_current_publisher = false
-                if publisher_key == current_publisher_key
+                assign is_current_publisher = publisher_value.active
+                if is_current_publisher == false and publisher_key == current_publisher_key
                   assign is_current_publisher = true
                 endif
               %}

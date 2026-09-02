@@ -42,34 +42,9 @@
   endif
 
   assign has_preserved_query = false
+  assign has_preserved_author_filter = false
+  assign has_preserved_publisher_filter = false
   capture preserved_query
-    if current_author != blank and current_author != '*'
-      assign encoded_current_author = current_author | url_encode
-      if has_preserved_query
-        echo '&'
-      endif
-      echo 'filter.p.m.custom.author=' | append: encoded_current_author
-      assign has_preserved_query = true
-    endif
-
-    if current_author != blank and current_author != '*'
-      assign encoded_current_author = current_author | url_encode
-      if has_preserved_query
-        echo '&'
-      endif
-      echo 'author=' | append: encoded_current_author
-      assign has_preserved_query = true
-    endif
-
-    if current_publisher != blank and current_publisher != '*'
-      assign encoded_current_publisher = current_publisher | url_encode
-      if has_preserved_query
-        echo '&'
-      endif
-      echo 'filter.p.vendor=' | append: encoded_current_publisher
-      assign has_preserved_query = true
-    endif
-
     if current_collection_search != blank
       assign encoded_collection_search = current_collection_search | url_encode
       if has_preserved_query
@@ -92,9 +67,6 @@
       for filter in filters
         assign filter_label_downcase = filter.label | downcase
         assign should_skip_filter = false
-        if filter.param_name contains 'vendor' or filter.param_name contains 'author'
-          assign should_skip_filter = true
-        endif
         if filter_label_downcase == 'category'
           assign should_skip_filter = true
         endif
@@ -125,6 +97,12 @@
           else
             for value in filter.active_values
               assign encoded_value = value.value | url_encode
+              if filter.param_name contains 'author'
+                assign has_preserved_author_filter = true
+              endif
+              if filter.param_name contains 'vendor'
+                assign has_preserved_publisher_filter = true
+              endif
               if has_preserved_query
                 echo '&'
               endif
@@ -134,6 +112,33 @@
           endif
         endunless
       endfor
+    endif
+
+    if has_preserved_author_filter == false and current_author != blank and current_author != '*'
+      assign encoded_current_author = current_author | url_encode
+      if has_preserved_query
+        echo '&'
+      endif
+      echo 'filter.p.m.custom.author=' | append: encoded_current_author
+      assign has_preserved_query = true
+    endif
+
+    if current_author != blank and current_author != '*'
+      assign encoded_current_author = current_author | url_encode
+      if has_preserved_query
+        echo '&'
+      endif
+      echo 'author=' | append: encoded_current_author
+      assign has_preserved_query = true
+    endif
+
+    if has_preserved_publisher_filter == false and current_publisher != blank and current_publisher != '*'
+      assign encoded_current_publisher = current_publisher | url_encode
+      if has_preserved_query
+        echo '&'
+      endif
+      echo 'filter.p.vendor=' | append: encoded_current_publisher
+      assign has_preserved_query = true
     endif
   endcapture
 
