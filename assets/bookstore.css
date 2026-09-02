@@ -8228,12 +8228,6 @@ body .bookstore-collection-hero .bookstore-copy {
   display: none !important;
 }
 
-.bookstore-filtering-pending :is(main[data-template^="collection"], main[data-template^="search"]) .product-grid {
-  opacity: 0.45;
-  pointer-events: none;
-  transition: opacity 0.18s ease;
-}
-
 .bookstore-collection-facet__list {
   display: grid;
   gap: 8px;
