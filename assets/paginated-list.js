@@ -5,6 +5,25 @@ import { PaginatedListAspectRatioHelper } from '@theme/paginated-list-aspect-rat
 import { StandardEvents } from '@shopify/events';
 import { getScrollTop, scrollTo } from '@theme/scroll-container';
 
+function hasBookstoreClientSideListingFilters() {
+  const params = new URLSearchParams(window.location.search);
+  const clientSideParams = [
+    'collection_search',
+    'bookstore_category',
+    'filter.p.vendor',
+    'filter.p.m.custom.author',
+    'filter.p.m.custom.format',
+    'filter.p.m.custom.language',
+    'filter.v.availability',
+    'filter.v.price.gte',
+    'filter.v.price.lte',
+  ];
+
+  return clientSideParams.some((name) => {
+    return params.getAll(name).some((value) => String(value || '').trim() && value !== '*');
+  });
+}
+
 /**
  * A custom element that renders a paginated list of items.
  *
@@ -38,6 +57,7 @@ export default class PaginatedList extends Component {
     super.connectedCallback();
 
     if (this.getAttribute('infinite-scroll') === 'false') return;
+    if (hasBookstoreClientSideListingFilters()) return;
 
     /** @type {HTMLElement | null} */
     const templateCard = this.querySelector('[ref="cardGallery"]');

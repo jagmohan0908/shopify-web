@@ -8209,13 +8209,29 @@ body .bookstore-collection-hero .bookstore-copy {
 .bookstore-collection-search-active [ref="viewMoreNext"],
 .bookstore-collection-vendor-filter-active [ref="viewMorePrevious"],
 .bookstore-collection-vendor-filter-active [ref="viewMoreNext"],
+.bookstore-collection-category-filter-active [ref="viewMorePrevious"],
+.bookstore-collection-category-filter-active [ref="viewMoreNext"],
+.bookstore-collection-price-filter-active [ref="viewMorePrevious"],
+.bookstore-collection-price-filter-active [ref="viewMoreNext"],
 .bookstore-collection-search-active .pagination,
 .bookstore-collection-search-active .pagination-wrapper,
 .bookstore-collection-search-active .pagination-controls,
 .bookstore-collection-vendor-filter-active .pagination,
 .bookstore-collection-vendor-filter-active .pagination-wrapper,
-.bookstore-collection-vendor-filter-active .pagination-controls {
+.bookstore-collection-vendor-filter-active .pagination-controls,
+.bookstore-collection-category-filter-active .pagination,
+.bookstore-collection-category-filter-active .pagination-wrapper,
+.bookstore-collection-category-filter-active .pagination-controls,
+.bookstore-collection-price-filter-active .pagination,
+.bookstore-collection-price-filter-active .pagination-wrapper,
+.bookstore-collection-price-filter-active .pagination-controls {
   display: none !important;
+}
+
+.bookstore-filtering-pending :is(main[data-template^="collection"], main[data-template^="search"]) .product-grid {
+  opacity: 0.45;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
 }
 
 .bookstore-collection-facet__list {
